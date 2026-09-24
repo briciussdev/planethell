@@ -1,0 +1,3358 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="PlanetHell: RPG de mesa cyberpunk em d10. Guia do Jogador completo e ficha de personagem online.">
+<title>PlanetHell</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap">
+<style>
+  /* Palette and faces taken from the original character sheet:
+     black ground, #242424 label cells, #00FF00 type, #339966 double rules, #C0C0C0 silver, Orbitron + Arial. */
+  :root{
+    --bg:#000000;
+    --cell:#242424;
+    --panel:#0a0d0a;
+    --g:#00ff00;
+    --g-soft:#7dff7d;
+    --g-dim:#339966;
+    --g-line:rgba(0,255,0,.28);
+    --g-faint:rgba(0,255,0,.08);
+    --silver:#c0c0c0;
+    --text:#d3dcd3;
+    --muted:#8fa38f;
+    --amber:#ffb000;
+    --vant:#00e5ff;
+    --def:#ff6a1a;
+    --hud:"Orbitron","Eurostile","Bank Gothic",Arial,sans-serif;
+    --read:Arial,"Helvetica Neue",Helvetica,sans-serif;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--read);font-size:17px;line-height:1.65;
+    -webkit-font-smoothing:antialiased}
+  /* CRT scanlines, fixed and faint */
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
+    background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.22) 3px);
+    mix-blend-mode:multiply;opacity:.55}
+  img{max-width:100%;display:block}
+  a{color:var(--g);text-decoration:none}
+  a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--g);outline-offset:3px}
+  ::selection{background:var(--g);color:#000}
+
+  .shell{width:100%;max-width:1180px;margin-inline:auto;padding-inline:20px}
+  section{padding-block:clamp(56px,8vw,104px)}
+
+  /* type */
+  .hud-label{font-family:var(--hud);font-size:11px;font-weight:600;letter-spacing:.24em;text-transform:uppercase;color:var(--g-dim);margin:0 0 14px}
+  .hud-label::before{content:"> ";color:var(--g)}
+  h1,h2,h3,h4{font-family:var(--hud);margin:0;text-wrap:balance;color:var(--g)}
+  h2{font-size:clamp(24px,3.8vw,40px);font-weight:800;letter-spacing:.02em;line-height:1.16;text-transform:uppercase;
+    text-shadow:0 0 18px rgba(0,255,0,.35)}
+  h3{font-size:16px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+  .lede{font-size:clamp(17px,2vw,20px);color:var(--text);max-width:64ch;margin:18px 0 0}
+  p{max-width:68ch}
+  b,strong{color:#f1f5f1;font-weight:700}
+
+  /* HUD frame: thin rule plus full-strength corner ticks */
+  .hud{position:relative;border:1px solid var(--g-line);background:var(--panel)}
+  .hud::before,.hud::after{content:"";position:absolute;width:14px;height:14px;pointer-events:none}
+  .hud::before{top:-1px;left:-1px;border-top:2px solid var(--g);border-left:2px solid var(--g)}
+  .hud::after{bottom:-1px;right:-1px;border-bottom:2px solid var(--g);border-right:2px solid var(--g)}
+
+  .rule{height:0;border:0;border-top:3px double var(--g-dim);margin:0;opacity:.8}
+
+  /* buttons */
+  .btn{display:inline-flex;align-items:center;gap:10px;font-family:var(--hud);font-size:12px;font-weight:700;letter-spacing:.18em;
+    text-transform:uppercase;padding:13px 20px;border:1px solid var(--g);color:#000;background:var(--g);cursor:pointer;
+    clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);
+    transition:filter .15s ease,background .15s ease}
+  .btn:hover{filter:brightness(1.15);box-shadow:0 0 22px rgba(0,255,0,.45)}
+  .btn.ghost{background:transparent;color:var(--g)}
+  .btn.ghost:hover{background:var(--g-faint)}
+  .cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+
+  /* ---------- top bar ---------- */
+  .topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:rgba(0,0,0,.88);
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-bottom:1px solid var(--g-line)}
+  .topbar-in{display:flex;align-items:center;gap:18px;height:50px}
+  .brand{font-family:var(--hud);font-weight:900;letter-spacing:.08em;color:var(--g);font-size:15px;white-space:nowrap}
+  .brand small{font-weight:500;color:var(--g-dim);letter-spacing:.2em;font-size:10px;margin-left:8px}
+  .topnav{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+  .topnav::-webkit-scrollbar{display:none}
+  .topnav a{font-family:var(--hud);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);
+    padding:8px 10px;white-space:nowrap;border:1px solid transparent}
+  .topnav a:hover,.topnav a.on{color:var(--g);border-color:var(--g-line)}
+  .ficha-btn{padding:8px 12px;font-size:10.5px;margin-left:6px;white-space:nowrap}
+  .progress{position:absolute;left:0;bottom:-1px;height:2px;width:0;background:var(--g);box-shadow:0 0 10px var(--g)}
+
+  /* ---------- hero ---------- */
+  .hero{position:relative;overflow:hidden;background:#000;border-bottom:1px solid var(--g-line)}
+  .hero img{width:100%;height:clamp(440px,74vh,780px);object-fit:cover;object-position:52% 42%}
+  .hero-veil{position:absolute;inset:0;background:
+      linear-gradient(to bottom,rgba(0,0,0,.3) 0%,rgba(0,0,0,.04) 20%,rgba(0,0,0,.72) 44%,rgba(0,0,0,.95) 70%,#000 100%)}
+  .hero-grid{position:absolute;inset:0;pointer-events:none;opacity:.18;
+    background-image:linear-gradient(var(--g-line) 1px,transparent 1px),linear-gradient(90deg,var(--g-line) 1px,transparent 1px);
+    background-size:64px 64px;mask-image:linear-gradient(to top,#000 0%,transparent 55%);-webkit-mask-image:linear-gradient(to top,#000 0%,transparent 55%)}
+  .hero-body{position:absolute;inset:auto 0 0 0;padding-block:0 clamp(28px,5vw,60px)}
+  .hero-code{font-family:var(--hud);font-size:11px;letter-spacing:.3em;color:var(--g-dim);margin:0 0 12px;text-transform:uppercase}
+  .wordmark{font-family:var(--hud);font-weight:900;font-size:clamp(40px,10vw,118px);line-height:.95;letter-spacing:.03em;margin:0;
+    color:var(--g);text-shadow:0 0 28px rgba(0,255,0,.55),0 0 2px #000;position:relative;display:inline-block}
+  .wordmark .yr{display:block;font-size:.26em;letter-spacing:.5em;color:var(--silver);text-shadow:none;margin-top:10px;font-weight:500}
+  .wordmark:hover .glitch{animation:glitch .5s steps(2) 2}
+  .glitch{display:inline-block}
+  @keyframes glitch{0%{transform:translate(0)}25%{transform:translate(-3px,1px);text-shadow:3px 0 #ff00c8,-3px 0 #00e5ff}
+    50%{transform:translate(2px,-1px);text-shadow:-2px 0 #ff00c8,2px 0 #00e5ff}75%{transform:translate(-1px,0)}100%{transform:translate(0)}}
+  @media (prefers-reduced-motion:reduce){.wordmark:hover .glitch{animation:none}}
+  .hero-claim{font-size:clamp(17px,2.2vw,21px);color:#e6ece6;max-width:46ch;margin:18px 0 0}
+  .blink{display:inline-block;width:.55em;height:1em;background:var(--g);vertical-align:-.12em;margin-left:4px;animation:blink 1.05s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  @media (prefers-reduced-motion:reduce){.blink{animation:none}}
+
+  /* ---------- world ---------- */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:36px}
+  .stat{padding:22px 22px 20px}
+  .stat .k{font-family:var(--hud);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--g-dim);margin:0 0 10px}
+  .stat .v{font-family:var(--hud);font-size:28px;font-weight:800;margin:0;color:var(--g);font-variant-numeric:tabular-nums}
+  .stat .v.hot{color:var(--amber);text-shadow:0 0 14px rgba(255,176,0,.35)}
+  .stat .v.cold{color:#9fe6ff}
+  .stat .d{font-size:14.5px;color:var(--muted);margin:10px 0 0;max-width:none}
+  .plate{position:relative;margin:0;border-block:1px solid var(--g-line);background:#000}
+  .plate img{width:100%;height:clamp(260px,40vw,460px);object-fit:cover;opacity:.82}
+  .plate figcaption{position:absolute;left:0;right:0;bottom:0;padding:48px 20px 16px;
+    background:linear-gradient(transparent,rgba(0,0,0,.95));font-family:var(--hud);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+  .plate figcaption b{color:var(--g)}
+
+  /* ---------- tension: ladder + live roller ---------- */
+  .tension-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:22px;margin-top:34px;align-items:start}
+  .ladder-wrap{padding:6px 0 0}
+  .ladder{width:100%;border-collapse:collapse;font-size:14.5px}
+  .ladder th{font-family:var(--hud);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--g-dim);font-weight:600;
+    text-align:left;padding:12px 14px;border-bottom:3px double var(--g-dim)}
+  .ladder td{padding:12px 14px;border-bottom:1px solid rgba(0,255,0,.1);vertical-align:top;transition:background .2s ease}
+  .ladder tr:last-child td{border-bottom:0}
+  .ladder .roll{font-family:var(--hud);font-size:11.5px;letter-spacing:.04em;color:var(--silver);white-space:nowrap}
+  .ladder .name{font-family:var(--hud);font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+  .ladder .cobra .name{color:var(--amber)}
+  .ladder .paga .name{color:var(--g)}
+  .ladder td:last-child{color:var(--text)}
+  .ladder tr.hit td{background:rgba(0,255,0,.10)}
+  .ladder tr.cobra.hit td{background:rgba(255,176,0,.12)}
+  .ladder tr.hit .name::after{content:" ◄";}
+
+  .roller{padding:20px}
+  .roller h3{margin:0 0 4px}
+  .roller .sub{font-size:13.5px;color:var(--muted);margin:0 0 16px}
+  .controls{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .ctl label{display:block;font-family:var(--hud);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--g-dim);margin-bottom:6px}
+  .ctl select{width:100%;appearance:none;-webkit-appearance:none;background:var(--cell);color:var(--g);border:1px solid var(--g-line);
+    font-family:var(--hud);font-size:15px;font-weight:700;padding:9px 10px;border-radius:0;cursor:pointer;
+    background-image:linear-gradient(45deg,transparent 50%,var(--g) 50%),linear-gradient(135deg,var(--g) 50%,transparent 50%);
+    background-position:calc(100% - 16px) 55%,calc(100% - 11px) 55%;background-size:5px 5px;background-repeat:no-repeat}
+  .roller .btn{width:100%;justify-content:center;margin-top:14px}
+  .tray{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px;min-height:48px}
+  .die{position:relative;width:44px;height:44px;display:grid;place-items:center;font-family:var(--hud);font-weight:800;font-size:16px;
+    background:#050805;border:1px solid rgba(0,255,0,.3);color:#5c745c;font-variant-numeric:tabular-nums;
+    clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+  .die.ok{color:var(--g);border-color:var(--g)}
+  .die.t{background:linear-gradient(180deg,rgba(255,176,0,.16),rgba(255,176,0,.04));border-color:rgba(255,176,0,.6)}
+  .die.t.ok{color:#eaffea}
+  .die.one{color:var(--amber)}
+  .die.ten{color:#000;background:var(--g);border-color:var(--g)}
+  .die.t.ten{background:linear-gradient(180deg,var(--g),#00b300)}
+  .die.x::after{content:"↻";position:absolute;right:3px;top:0;font-size:9px;color:inherit;opacity:.8}
+  .die.roll-in{animation:dicein .32s ease-out both}
+  @keyframes dicein{from{opacity:0;transform:translateY(-6px) rotate(-20deg)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.die.roll-in{animation:none}}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-family:var(--hud);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .legend i{font-style:normal;display:inline-flex;align-items:center;gap:6px}
+  .sw{width:10px;height:10px;border:1px solid rgba(0,255,0,.4);display:inline-block}
+  .sw.t{border-color:rgba(255,176,0,.7);background:rgba(255,176,0,.25)}
+  .readout{margin-top:16px;border-top:3px double var(--g-dim);padding-top:14px;display:grid;gap:8px}
+  .readout .row{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+  .readout .k{font-family:var(--hud);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--g-dim)}
+  .readout .v{font-family:var(--hud);font-weight:700;color:var(--g);font-size:15px;text-align:right}
+  .readout .v.warn{color:var(--amber)}
+  .readout .note{font-size:14px;color:var(--text);margin:4px 0 0;max-width:none}
+
+  /* ---------- worked example ---------- */
+  .steps{list-style:none;margin:24px 0 0;padding:0;counter-reset:s}
+  .steps li{counter-increment:s;padding:14px 0 14px 58px;position:relative;border-top:1px solid rgba(0,255,0,.12)}
+  .steps li::before{content:"0" counter(s);position:absolute;left:0;top:13px;font-family:var(--hud);font-size:12px;font-weight:700;
+    color:#000;background:var(--g);padding:2px 7px;letter-spacing:.08em}
+  .steps span{color:var(--muted)}
+  .verdict{margin-top:22px;padding:18px 20px}
+  .verdict p{margin:0;max-width:none}
+  .verdict i{color:var(--g-soft)}
+
+  /* ---------- races ---------- */
+  .races{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:34px}
+  .race{display:flex;flex-direction:column;transition:border-color .2s ease,box-shadow .2s ease}
+  .race:hover{border-color:var(--g);box-shadow:0 0 26px rgba(0,255,0,.14)}
+  .race-shot{position:relative;aspect-ratio:4/5;overflow:hidden;background:#000}
+  .race-shot img{width:100%;height:100%;object-fit:cover;opacity:.88;transition:transform .5s ease,opacity .3s ease}
+  .race:hover .race-shot img{transform:scale(1.04);opacity:1}
+  .race-shot::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 45%,rgba(0,0,0,.94))}
+  .race-tag{position:absolute;left:14px;right:14px;bottom:12px;z-index:1;display:flex;justify-content:space-between;align-items:end;gap:10px}
+  .race-tag h3{font-size:20px;font-weight:800;text-shadow:0 0 14px rgba(0,255,0,.45)}
+  .race-tag .size{font-family:var(--hud);font-size:10px;letter-spacing:.14em;color:#000;background:var(--g);padding:3px 7px;white-space:nowrap;font-weight:700}
+  .race-life{font-family:var(--hud);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--g-dim);padding:12px 16px 0;margin:0}
+  .race-body{padding:10px 16px 18px;display:grid;gap:10px;margin:0}
+  .trait{display:grid;grid-template-columns:58px 1fr;gap:10px;align-items:baseline}
+  .trait dt{font-family:var(--hud);font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:2px 0;
+    border-right:1px solid var(--g-line)}
+  .trait dd{margin:0;font-size:14.5px;line-height:1.5;color:var(--text)}
+  .trait dd em{font-style:normal;font-weight:700;color:var(--amber)}
+  .trait.up dd em{color:var(--g)}
+
+  /* ---------- guide cover ---------- */
+  .cover{position:relative;background:#000;border-block:1px solid var(--g-line);padding:0}
+  .cover img{width:100%;height:clamp(400px,56vw,560px);object-fit:cover;object-position:50% 38%;opacity:.45}
+  .cover-body{position:absolute;inset:0;display:grid;align-content:center;background:linear-gradient(90deg,rgba(0,0,0,.92) 0%,rgba(0,0,0,.72) 55%,rgba(0,0,0,.35) 100%)}
+
+  /* ---------- the guide terminal ---------- */
+  .guide{padding-block:0 clamp(40px,6vw,90px)}
+  .console{position:sticky;top:calc(env(safe-area-inset-top,0px) + 50px);z-index:30;background:rgba(0,0,0,.92);
+    border-bottom:1px solid var(--g-line);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  .console-in{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-block:10px}
+  .path{font-family:var(--hud);font-size:11px;letter-spacing:.14em;color:var(--g-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1 1 220px;min-width:0}
+  .path b{color:var(--g)}
+  .search{display:flex;align-items:center;gap:6px;flex:0 1 380px;min-width:0}
+  .search input{flex:1;min-width:0;background:var(--cell);border:1px solid var(--g-line);color:var(--g);font-family:var(--hud);font-size:12px;
+    letter-spacing:.06em;padding:9px 12px;border-radius:0}
+  .search input::placeholder{color:#5f7a5f}
+  .search .count{font-family:var(--hud);font-size:10.5px;color:var(--muted);min-width:5.5em;text-align:right;white-space:nowrap}
+  .icon-btn{background:transparent;border:1px solid var(--g-line);color:var(--g);font-family:var(--hud);font-size:12px;width:34px;height:34px;cursor:pointer}
+  .icon-btn:hover{background:var(--g-faint);border-color:var(--g)}
+  .icon-btn:disabled{opacity:.35;cursor:default}
+
+  .guide-grid{display:grid;grid-template-columns:250px minmax(0,1fr);gap:clamp(24px,4vw,56px);align-items:start;padding-top:34px}
+  .toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 118px);max-height:calc(100vh - 140px);overflow:auto;padding:14px 12px;scrollbar-width:thin;scrollbar-color:var(--g-dim) transparent}
+  .toc summary{font-family:var(--hud);font-size:11px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--g);cursor:pointer;list-style:none;padding:2px 4px 10px}
+  .toc summary::-webkit-details-marker{display:none}
+  .toc summary::after{content:" [+]";color:var(--g-dim)}
+  .toc details[open] summary::after{content:" [−]"}
+  .toc ol{list-style:none;margin:0;padding:0}
+  .toc a{display:grid;grid-template-columns:3.6em 1fr;gap:6px;padding:7px 6px;font-size:13.5px;line-height:1.35;color:var(--muted);border-left:2px solid transparent;position:relative}
+  .toc a .k{font-family:var(--hud);font-size:10px;font-weight:700;color:var(--g-dim);padding-top:2px;letter-spacing:.06em}
+  .toc a:hover{color:var(--g);background:var(--g-faint)}
+  .toc a.on{color:#000;background:var(--g);border-left-color:var(--g)}
+  .toc a.on .k{color:#000}
+  .toc .bar{position:absolute;left:0;bottom:0;height:1px;background:var(--g);width:0}
+  .toc a.on .bar{background:#000}
+
+  .prose{min-width:0;max-width:78ch}
+  .intro-line{font-family:var(--hud);font-size:clamp(14px,1.7vw,17px);letter-spacing:.06em;color:var(--g);margin:0 0 10px;text-transform:uppercase;line-height:1.5}
+  .prose h2{font-size:clamp(22px,3.2vw,32px);margin:80px 0 22px;scroll-margin-top:130px;display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;
+    padding:18px 0 16px;border-top:3px double var(--g-dim);position:relative}
+  .prose h2:first-of-type{margin-top:26px}
+  .prose h2 .sec{font-size:11px;font-weight:700;letter-spacing:.2em;color:#000;background:var(--g);padding:5px 9px;text-shadow:none;
+    clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}
+  .prose h3{font-size:15.5px;margin:42px 0 12px;color:var(--g-soft);scroll-margin-top:130px;display:flex;gap:10px;align-items:baseline}
+  .prose h3::before{content:"//";color:var(--g-dim);font-weight:500}
+  .prose h4{font-size:12px;letter-spacing:.18em;color:var(--silver);margin:30px 0 10px;scroll-margin-top:130px}
+  .prose h4::before{content:"▸ ";color:var(--g)}
+  .anchor{opacity:0;font-size:.7em;color:var(--g-dim);margin-left:auto;padding:0 4px;transition:opacity .15s ease}
+  .prose h2:hover .anchor,.prose h3:hover .anchor,.anchor:focus{opacity:1}
+  .prose p{margin:0 0 15px;color:var(--text)}
+  .prose em{color:var(--g-soft);font-style:italic}
+  .prose ul,.prose ol{margin:0 0 18px;padding-left:24px}
+  .prose li{margin:6px 0}
+  .prose ul li::marker{content:"■  ";color:var(--g);font-size:.7em}
+  .prose ol li::marker{font-family:var(--hud);font-weight:700;color:var(--g);font-size:.8em}
+  .prose blockquote{margin:22px 0 24px;padding:16px 18px 14px;border:1px solid var(--g-line);border-left:3px solid var(--g);background:linear-gradient(90deg,rgba(0,255,0,.07),rgba(0,255,0,.015) 70%);position:relative}
+  .prose blockquote::before{content:"SYS.NOTE";display:block;font-family:var(--hud);font-size:9.5px;font-weight:700;letter-spacing:.26em;color:var(--g-dim);margin-bottom:6px}
+  .prose blockquote p:last-child{margin-bottom:0}
+  .prose code{font-family:var(--hud);font-size:.8em;background:var(--cell);border:1px solid var(--g-line);padding:1px 6px;color:var(--g)}
+  .prose .tablewrap{margin:18px 0 24px;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--g-line);background:#040604;position:relative}
+  .prose .tablewrap::before{content:"";position:absolute;top:-1px;left:-1px;width:12px;height:12px;border-top:2px solid var(--g);border-left:2px solid var(--g);pointer-events:none}
+  .prose table{width:100%;border-collapse:collapse;font-size:14.5px;line-height:1.5}
+  .prose th{text-align:left;font-family:var(--hud);font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--g);
+    padding:12px;background:var(--cell);border-bottom:3px double var(--g-dim);white-space:nowrap}
+  .prose td{padding:10px 12px;border-bottom:1px solid rgba(0,255,0,.09);vertical-align:top;color:var(--text);min-width:9ch}
+  .prose tbody tr:nth-child(even) td{background:rgba(255,255,255,.012)}
+  .prose tbody tr:hover td{background:rgba(0,255,0,.06)}
+  .prose tr:last-child td{border-bottom:0}
+  .prose td:first-child{color:#f1f5f1}
+  .prose mark{background:var(--g);color:#000;padding:0 1px}
+  .prose mark.cur{background:var(--amber);box-shadow:0 0 0 2px var(--amber)}
+  .toplink{position:fixed;right:18px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);z-index:35;width:44px;height:44px;display:grid;place-items:center;
+    background:#000;border:1px solid var(--g);color:var(--g);font-family:var(--hud);font-weight:800;font-size:16px}
+  .toplink:hover{background:var(--g);color:#000}
+  .toplink[hidden]{display:none!important}
+
+  /* components set inside the guide */
+  .prose .fig{margin:26px 0 28px;padding:0;overflow:hidden}
+  .prose .fig img{width:100%;height:clamp(220px,34vw,380px);object-fit:cover;opacity:.9}
+  .prose .fig figcaption{font-family:var(--hud);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);padding:10px 14px;border-top:1px solid var(--g-line)}
+  .prose .fig figcaption b{color:var(--g)}
+  .prose .races{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:24px 0 34px}
+  .prose .race-shot{aspect-ratio:3/4}
+  .prose .race-tag h3{font-size:16px;margin:0;display:block}
+  .prose .race-tag h3::before{content:none}
+  .prose .race-life{padding:10px 14px 0}
+  .prose .race-body{padding:8px 14px 16px;gap:6px}
+  .prose .trait{grid-template-columns:52px 1fr;gap:8px}
+  .prose .trait dd{font-size:13.5px}
+  .prose .roller{margin:22px 0 30px}
+  .prose .roller h3{margin:0 0 4px;display:block}
+  .prose .roller h3::before{content:none}
+  .prose .roller p{margin:0 0 16px}
+  .prose .roller .legend{margin-top:10px}
+  .prose .roller .readout p.note{margin:4px 0 0}
+  .prose tr[data-r] td{transition:background .2s ease}
+  .prose tr.cobra td:nth-child(2) strong{color:var(--amber)}
+  .prose tr.paga td:nth-child(2) strong{color:var(--g)}
+  .prose tr.hit td{background:rgba(0,255,0,.12)!important}
+  .prose tr.cobra.hit td{background:rgba(255,176,0,.14)!important}
+  .prose tr.hit td:nth-child(2)::after{content:" ◄";color:inherit}
+  .guide{padding-top:0}
+  /* Anexo A in neon blue, Anexo B in neon carrot: name and value of every entry */
+  .anx-vant{--hl:var(--vant);--hl-glow:rgba(0,229,255,.45)}
+  .anx-def{--hl:var(--def);--hl-glow:rgba(255,106,26,.45)}
+  .anx p > strong:first-child,.anx td:first-child strong{color:var(--hl);text-shadow:0 0 10px var(--hl-glow)}
+  .anx td:nth-child(2){color:var(--hl);font-family:var(--hud);font-weight:700;font-size:13px;white-space:nowrap}
+  .anx th{color:var(--hl)}
+  .anx .tablewrap{border-color:color-mix(in srgb,var(--hl) 35%,transparent)}
+  .anx .tablewrap::before{border-color:var(--hl)}
+  .anx .lvl{display:inline-block;font-family:var(--hud);font-weight:800;font-size:.72em;color:#000;background:var(--hl);padding:0 5px;margin-right:1px;line-height:1.5}
+  .anx h2 .sec{background:var(--hl)}
+  .anx h2{color:var(--hl);text-shadow:0 0 18px var(--hl-glow)}
+  .anx blockquote{border-left-color:var(--hl);background:linear-gradient(90deg,color-mix(in srgb,var(--hl) 9%,transparent),transparent 70%)}
+  .legal{font-family:var(--read);font-size:12.5px;line-height:1.6;color:var(--muted);max-width:none;margin:18px 0 0;padding-top:16px;border-top:1px solid var(--g-line);text-transform:none;letter-spacing:0}
+  .legal p{margin:0 0 6px;max-width:92ch}
+  footer{padding-block:30px;border-top:3px double var(--g-dim)}
+  .foot-in{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-between;font-family:var(--hud);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--g-dim)}
+
+  @media (max-width:980px){
+    .tension-grid{grid-template-columns:minmax(0,1fr)}
+    .guide-grid{grid-template-columns:minmax(0,1fr)}
+    .toc{position:static;max-height:none}
+  }
+  @media (max-width:640px){
+    .ladder thead{display:none}
+    .ladder tr{display:grid;grid-template-columns:auto 1fr;column-gap:12px;padding:10px 12px;border-bottom:1px solid rgba(0,255,0,.1)}
+    .ladder td{border:0;padding:0}
+    .ladder td.name{grid-column:1;grid-row:1}
+    .ladder td.roll{grid-column:2;grid-row:1;text-align:right;padding-top:2px}
+    .ladder td:last-child{grid-column:1 / -1;min-width:0;padding-top:6px}
+  }
+  @media (max-width:760px){
+    .hero-veil{background:linear-gradient(to bottom,rgba(0,0,0,.25) 0%,rgba(0,0,0,.2) 18%,rgba(0,0,0,.85) 40%,rgba(0,0,0,.96) 62%,#000 100%)}
+    .stats{grid-template-columns:1fr}
+    .topnav{display:none}
+    .ficha-btn{margin-left:auto}
+    .console{top:calc(env(safe-area-inset-top,0px) + 50px)}
+    .path{display:none}
+    .search{flex:1 1 100%}
+    .prose h2,.prose h3,.prose h4{scroll-margin-top:118px}
+  }
+</style>
+</head>
+<body>
+
+
+<div class="topbar" id="topbar">
+  <div class="shell topbar-in">
+    <a class="brand" href="#top">PLANETHELL<small>2663</small></a>
+    <nav class="topnav" aria-label="Seções da página">
+      <a href="#g-1-o-que-é-planethell">O jogo</a>
+      <a href="#g-2-o-mundo-que-o-seu-personagem-conhece">Mundo</a>
+      <a href="#g-3-as-onze-raças">Raças</a>
+      <a href="#g-4-o-sistema-em-poucas-linhas">Sistema</a>
+      <a href="#g-8-combate">Combate</a>
+      <a href="#g-10-criando-o-seu-personagem">Criação</a>
+    </nav>
+    <a class="btn ficha-btn" href="ficha/">Minha ficha</a>
+  </div>
+  <div class="progress" id="progress"></div>
+</div>
+
+<header class="hero" id="top">
+  <img src="img/hero-planeta.webp" alt="O planeta visto da órbita, com o eixo tombado: uma face derretida pelo sol, uma face congelada, e a faixa habitável entre as duas, com as luzes de Night City e Babylon.">
+  <div class="hero-veil"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-body">
+    <div class="shell">
+      <p class="hero-code">RPG de mesa · d10 · Guia do Jogador</p>
+      <h1 class="wordmark"><span class="glitch">PLANETHELL</span><span class="yr">ANO 2663</span></h1>
+      <p class="hero-claim">Um mundo que já acabou uma vez. Você consegue o que queria — e alguém paga.<span class="blink" aria-hidden="true"></span></p>
+      <div class="cta-row">
+        <a class="btn" href="#g-1-o-que-é-planethell">Começar a leitura</a>
+        <a class="btn ghost" href="ficha/">Criar a minha ficha</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="guide" id="guia">
+  <div class="console">
+    <div class="shell console-in">
+      <div class="path" id="path">PLANETHELL://GUIA_DO_JOGADOR/<b id="path-cur">INÍCIO</b></div>
+      <div class="search" role="search">
+        <input id="q" type="search" placeholder="Buscar no guia: Colapso, Blindagem…" aria-label="Buscar no guia" autocomplete="off">
+        <span class="count" id="q-count"></span>
+        <button class="icon-btn" id="q-prev" type="button" aria-label="Resultado anterior" disabled>↑</button>
+        <button class="icon-btn" id="q-next" type="button" aria-label="Próximo resultado" disabled>↓</button>
+      </div>
+    </div>
+  </div>
+  <div class="shell guide-grid">
+    <nav class="toc hud" aria-label="Índice do guia">
+      <details open id="toc-box">
+        <summary>Índice</summary>
+        <ol>
+<li><a href="#g-1-o-que-é-planethell" data-path="SEC.01_O_QUE_É_PLANETHELL"><span class="k">01</span><span>O que é PlanetHell</span><span class="bar"></span></a></li>
+<li><a href="#g-2-o-mundo-que-o-seu-personagem-conhece" data-path="SEC.02_O_MUNDO_QUE_O_SEU_PERSONAGEM_CONHECE"><span class="k">02</span><span>O mundo que o seu personagem conhece</span><span class="bar"></span></a></li>
+<li><a href="#g-3-as-onze-raças" data-path="SEC.03_AS_ONZE_RAÇAS"><span class="k">03</span><span>As onze raças</span><span class="bar"></span></a></li>
+<li><a href="#g-4-o-sistema-em-poucas-linhas" data-path="SEC.04_O_SISTEMA_EM_POUCAS_LINHAS"><span class="k">04</span><span>O sistema em poucas linhas</span><span class="bar"></span></a></li>
+<li><a href="#g-5-dados-de-tensão" data-path="SEC.05_DADOS_DE_TENSÃO"><span class="k">05</span><span>Dados de Tensão</span><span class="bar"></span></a></li>
+<li><a href="#g-6-o-despertar" data-path="SEC.06_O_DESPERTAR"><span class="k">06</span><span>O Despertar</span><span class="bar"></span></a></li>
+<li><a href="#g-7-saúde-força-de-vontade-e-moralidade" data-path="SEC.07_SAÚDE_FORÇA_DE_VONTADE_E_MORALIDADE"><span class="k">07</span><span>Saúde, Força de Vontade e Moralidade</span><span class="bar"></span></a></li>
+<li><a href="#g-8-combate" data-path="SEC.08_COMBATE"><span class="k">08</span><span>Combate</span><span class="bar"></span></a></li>
+<li><a href="#g-9-quirks-e-trilhas-de-poder" data-path="SEC.09_QUIRKS_E_TRILHAS_DE_PODER"><span class="k">09</span><span>Quirks e Trilhas de Poder</span><span class="bar"></span></a></li>
+<li><a href="#g-10-criando-o-seu-personagem" data-path="SEC.10_CRIANDO_O_SEU_PERSONAGEM"><span class="k">10</span><span>Criando o seu personagem</span><span class="bar"></span></a></li>
+<li><a href="#g-11-a-ficha-digital" data-path="SEC.11_A_FICHA_DIGITAL"><span class="k">11</span><span>A ficha digital</span><span class="bar"></span></a></li>
+<li><a href="#g-12-cinco-erros-comuns" data-path="SEC.12_CINCO_ERROS_COMUNS"><span class="k">12</span><span>Cinco erros comuns</span><span class="bar"></span></a></li>
+<li><a href="#g-anexo-a-vantagens" data-path="ANX.A_VANTAGENS"><span class="k">ANX.A</span><span>Vantagens</span><span class="bar"></span></a></li>
+<li><a href="#g-anexo-b-defeitos" data-path="ANX.B_DEFEITOS"><span class="k">ANX.B</span><span>Defeitos</span><span class="bar"></span></a></li>
+<li><a href="#g-anexo-c-as-dezessete-trilhas" data-path="ANX.C_AS_DEZESSETE_TRILHAS"><span class="k">ANX.C</span><span>As dezessete Trilhas</span><span class="bar"></span></a></li>
+<li><a href="#g-anexo-d-experiência" data-path="ANX.D_EXPERIÊNCIA"><span class="k">ANX.D</span><span>Experiência</span><span class="bar"></span></a></li>
+        </ol>
+      </details>
+    </nav>
+    <article class="prose" id="prose">
+<p class="intro-line">Tudo o que você precisa para sentar à mesa. Nenhum conhecimento prévio necessário.</p>
+<h2 id="g-1-o-que-é-planethell"><span class="sec">SEC.01</span><span>O que é PlanetHell</span><a class="anchor" href="#g-1-o-que-é-planethell" aria-label="Link para esta seção">#</a></h2>
+<p>PlanetHell é um RPG de mesa cyberpunk num mundo que já acabou uma vez.</p>
+<p>A Terra sofreu um cataclismo que deslocou o eixo do planeta. A rotação mudou e os polos deixaram de existir. No lugar deles surgiram duas faces: uma permanentemente voltada para o Sol, quente o bastante para derreter rocha, e outra voltada para o vazio, fria o bastante para matar qualquer coisa no instante do contato.</p>
+<p>Entre as duas sobrou uma faixa estreita de terra habitável. É onde mora todo mundo: cerca de um bilhão de pessoas, cinco nações que se odeiam, e menos de cinco por cento delas ainda humanas de verdade.</p>
+<h3 id="g-a-notícia-que-veio-junto"><span>A notícia que veio junto</span><a class="anchor" href="#g-a-notícia-que-veio-junto" aria-label="Link para esta seção">#</a></h3>
+<figure class="fig hud"><img src="img/anunnaki.webp" alt="Dois Anunnaki de manto observando o planeta de uma sacada orbital." loading="lazy"><figcaption><b>Anunnaki</b> — os deuses de todas as religiões</figcaption></figure>
+
+<p>O cataclismo trouxe uma revelação que a humanidade esperou milênios para ouvir e teria preferido não ouvir. Deus existe. Tem nome, tem pai, tem irmão e tem um plano.</p>
+<p>Os deuses de todas as religiões são os <strong>Anunnaki</strong>, uma raça de viajantes espaciais, imortais, que esteve aqui antes. Muito antes. Foram eles que aceleraram a evolução humana, porque precisavam de mão de obra e material de estudo. Seis mil anos de religião foram o registro impreciso de visitas administrativas.</p>
+<p>Após o cataclismo vieram duas grandes guerras santas: a primeira travada entre humanos que foram deixados para trás e desejavam ser os próximos arrebatados; a segunda, entre humanos e mutantes, autodenominados "Punks", os "rejeitados por Deus".</p>
+<p>Nesse caos de guerras e cataclismo, "Deus" prometeu retornar uma última vez para buscar o que deixara guardado.</p>
+<p>Os Punks tornaram-se a raça dominante, governantes do planeta, e estabeleceram-se na faixa de terra que um dia foi a costa oeste dos EUA, nomeando o estado de Babylon e sua capital de Night City — a cidade que nunca dorme. Consequentemente, também rebatizaram o planeta Terra para "PlanetHell: o mundo infernal dos que foram rejeitados por um deus filho-da-puta".</p>
+<h3 id="g-o-que-você-joga"><span>O que você joga</span><a class="anchor" href="#g-o-que-você-joga" aria-label="Link para esta seção">#</a></h3>
+<p>Você interpreta alguém que nasceu depois do fim do mundo e considera isso normal. Um mutante, aqui chamado de "Punk", com um poder que ninguém mais tem. Um ciborgue que trocou metade do corpo por uma vantagem, ou muitas. Uma inteligência artificial que começou a fazer perguntas e a questionar a própria existência. Um meio-demônio numa cidade que não quer nenhum dos dois lados da sua família.</p>
+<blockquote>
+<p>PlanetHell não é um jogo sobre salvar o mundo. É um jogo sobre o que você faz enquanto o mundo é vendido, e sobre quantas pessoas você consegue levar junto quando corre.</p>
+</blockquote>
+<h3 id="g-do-que-este-jogo-trata-de-verdade"><span>Do que este jogo trata de verdade</span><a class="anchor" href="#g-do-que-este-jogo-trata-de-verdade" aria-label="Link para esta seção">#</a></h3>
+<p>Tem deuses, demônios, frotas espaciais e gente — ou coisa — que corre mais rápido que o som. Nada disso é o assunto.</p>
+<p>O assunto é <strong>quem é tratado como indivíduo e quem é tratado como ferramenta</strong>. Almas viram combustível. Inteligências artificiais viram propriedade. Humanos viram gado. Um povo inteiro foi gerado com um propósito gravado no sangue.</p>
+<p>É por isso que o sistema mede <strong>Moralidade</strong>. E é por isso que o pior pecado deste mundo não é matar: é tirar de alguém a capacidade de escolher.</p>
+<h3 id="g-se-você-nunca-jogou-rpg"><span>Se você nunca jogou RPG</span><a class="anchor" href="#g-se-você-nunca-jogou-rpg" aria-label="Link para esta seção">#</a></h3>
+<p>Não tem problema. Funciona assim: você cria uma pessoa no papel, descreve o que ela tenta fazer, e quando o resultado é incerto você rola dados de dez faces para descobrir se deu certo. Uma pessoa na mesa, o Narrador, descreve o mundo e interpreta todos os personagens que não são dos jogadores.</p>
+<p>O sistema deste jogo cabe em poucas linhas, e elas estão na seção 4.</p>
+<h2 id="g-2-o-mundo-que-o-seu-personagem-conhece"><span class="sec">SEC.02</span><span>O mundo que o seu personagem conhece</span><a class="anchor" href="#g-2-o-mundo-que-o-seu-personagem-conhece" aria-label="Link para esta seção">#</a></h2>
+<p>Tudo nesta seção é conhecimento comum. O seu personagem sabe disso sem precisar rolar nada, do mesmo jeito que você sabe em que país mora.</p>
+<h3 id="g-o-planeta"><span>O planeta</span><a class="anchor" href="#g-o-planeta" aria-label="Link para esta seção">#</a></h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Característica</th>
+<th>Como é</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dia</strong></td>
+<td><strong>48 horas</strong>, das quais só <strong>4 têm sol</strong>. As outras 44 são de crepúsculo e escuridão total</td>
+</tr>
+<tr>
+<td><strong>Estações</strong></td>
+<td>Não existem mais. Existe o dia e existe a noite</td>
+</tr>
+<tr>
+<td><strong>Nexus de Fogo</strong></td>
+<td>Face voltada ao Sol. Um verdadeiro inferno. Lar de seres infernais. Dizem que há uma cidade lá dentro</td>
+</tr>
+<tr>
+<td><strong>Nexus de Gelo</strong></td>
+<td>Face voltada ao vazio do espaço sideral. Inferno gelado. Há demônios lá também. Mata no instante do contato</td>
+</tr>
+<tr>
+<td><strong>Faixa habitável</strong></td>
+<td>A banda estreita entre os dois. Tudo o que existe está aqui</td>
+</tr>
+<tr>
+<td><strong>População</strong></td>
+<td>Cerca de 1 bilhão. Menos de 5% são humanos puros, agrupados em duas nações: Romania e Meca</td>
+</tr>
+<tr>
+<td><strong>Fauna e flora</strong></td>
+<td>Praticamente extintas. A maior reserva viva está em Eden. Os mares estão quase 90% poluídos ou salgados demais. A escassez de água, comida e recursos naturais é um dos motivos das guerras</td>
+</tr>
+<tr>
+<td><strong>O que vale dinheiro</strong></td>
+<td><strong>Água</strong> e <strong>ouro</strong>. Ouro porque arcas divinas são feitas dele</td>
+</tr>
+</tbody>
+</table></div>
+<p>As 44 horas de escuridão não são detalhe de ambientação. É quando as coisas — que os habitantes desses locais chamam de demônios — saem dos desertos, e é a razão de as cidades serem construídas como são: verdadeiras fortalezas. Aquelas que não resistiram hoje são apenas escombros.</p>
+<h3 id="g-os-arrebatamentos"><span>Os Arrebatamentos</span><a class="anchor" href="#g-os-arrebatamentos" aria-label="Link para esta seção">#</a></h3>
+<p>Periodicamente uma arca anunnaki desce e leva gente. Não há aviso, não há critério negociável e não há apelação.</p>
+<p>Ela leva <strong>apenas humanos de sangue puro, cujo DNA não foi alterado</strong>, e leva todos que encontra. A promessa é o paraíso; o destino real é o compartimento de uma nave, onde as almas viram combustível.</p>
+<p>Já houve dois. <strong>O último levou 99% dos humanos vivos.</strong> O terceiro está sendo preparado.</p>
+<p>Nenhum Punk, Lycan, Android, Nefilin ou Youkai jamais foi levado. Ninguém explicou por quê. Muitos preferem acreditar que foram poupados; a maioria sabe que foram descartados.</p>
+<blockquote>
+<p>É por isso que os Punks e os humanos se odeiam, e é por isso que um humano vivo hoje é uma anomalia estatística que colecionadores de Meca e Romania pagam para ter.</p>
+</blockquote>
+<figure class="fig hud"><img src="img/night-city.webp" alt="Night City de cima: arranha-céus, dirigíveis e canais de água escura." loading="lazy"><figcaption><b>Night City</b> — capital de Babylon, a cidade que nunca dorme</figcaption></figure>
+<h3 id="g-as-cinco-nações"><span>As cinco nações</span><a class="anchor" href="#g-as-cinco-nações" aria-label="Link para esta seção">#</a></h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Nação</th>
+<th>Capital</th>
+<th>Regime</th>
+<th>Quem manda ali</th>
+<th>Em guerra com</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Babylon</strong></td>
+<td>Night City</td>
+<td>República laica</td>
+<td>Oficialmente há um Presidente eleito, e o segundo colocado é nomeado Primeiro Ministro. Na prática, nas ruas, ninguém e todo mundo manda</td>
+<td>Ninguém, oficialmente</td>
+</tr>
+<tr>
+<td><strong>Sovia</strong></td>
+<td>Apocalypse</td>
+<td>Feudalismo de guerra</td>
+<td>Conselho de senhores da guerra e suas respectivas tribos</td>
+<td>Contra todos, às vezes até interna. Em paz com Eden e, tecnicamente, com Babylon</td>
+</tr>
+<tr>
+<td><strong>Romania</strong></td>
+<td>Nova Roma</td>
+<td>Teocracia cristã</td>
+<td>Os Reis Magos: três humanos escolhidos por Deus</td>
+<td>Meca, Sovia</td>
+</tr>
+<tr>
+<td><strong>Meca</strong></td>
+<td>Akbah</td>
+<td>Califado</td>
+<td>O Califa e sua corte, escolhido por Alá</td>
+<td>Romania, Sovia</td>
+</tr>
+<tr>
+<td><strong>Eden</strong></td>
+<td>Paradise</td>
+<td>Federação isolacionista</td>
+<td>Câmara de Anciões do Povo Livre</td>
+<td>Ninguém</td>
+</tr>
+</tbody>
+</table></div>
+<p>Em uma linha cada:</p>
+<ul>
+<li><strong>Babylon</strong> tem a água, a tecnologia Magitek e as corporações. Todas as raças são legais, e todas são exploráveis.</li>
+<li><strong>Sovia</strong> é a ponte entre os dois desertos e ocupa 85% de tudo que sai deles. É a terra originária dos Punks, dos Youkai, dos Han'you, Androids e Mechas. Humanos aqui são raros e mercadoria valiosa.</li>
+<li><strong>Romania</strong> tem o ouro e a fé. Um dos poucos lugares onde humanos mandam, e onde ser Punk é crime punido com morte ou expulsão. Exceções são concedidas apenas em casos extremos.</li>
+<li><strong>Meca</strong> tem a melhor terra fértil do planeta, e por isso está sempre em guerra. Humanos comandam aqui. Punks podem ser admitidos em caso de conversão ao islã e, nesse caso, devem servir na linha de frente contra Sovia e Romania.</li>
+<li><strong>Eden</strong> é um arquipélago com a maior reserva de fauna viva e colônias nas luas. Lar dos Lycans, Nefilins, Anunnakis, Others e outras raças galácticas em menor número. É a nação mais pacífica de PlanetHell e, por isso, sempre neutra nas guerras.</li>
+</ul>
+<p>Fora dessas cinco fronteiras não há governo nenhum. Pode haver outras cidades nas faixas, mas são independentes — como Santiago, que fica na faixa quente e é frequentemente atacada por criaturas do Nexus de Fogo. Há muita terra não mapeada, e o que quer que tenha se estabelecido ali enquanto ninguém se importa.</p>
+<h3 id="g-a-palavra-que-você-vai-ouvir-muitas-vezes"><span>A palavra que você vai ouvir muitas vezes</span><a class="anchor" href="#g-a-palavra-que-você-vai-ouvir-muitas-vezes" aria-label="Link para esta seção">#</a></h3>
+<p><strong>Magitek</strong> é tecnologia de origem extraplanetária que faz o que deveria ser impossível. Ninguém neste planeta consegue viver decentemente sem um dispositivo Magitek; raros são aqueles que conseguem fabricar, e o estoque existente é escasso, ou exclusivo.</p>
+<p>Magitek move veículos, aquece casas, purifica água, faz funcionar a comunicação entre continentes e sustenta metade dos implantes que os Cyberpunks carregam. Não é relíquia: é infraestrutura. E, como a seção 8 vai mostrar, é também a única coisa que atravessa blindagem pesada — o que faz dela o centro de gravidade de toda crônica que chega ao fim.</p>
+<h2 id="g-3-as-onze-raças"><span class="sec">SEC.03</span><span>As onze raças</span><a class="anchor" href="#g-3-as-onze-raças" aria-label="Link para esta seção">#</a></h2>
+<p>Escolher a raça é a primeira decisão real da criação. Cada uma dá três coisas e cobra duas.</p>
+<p>O que ela <strong>dá</strong>: um <strong>Tamanho</strong>, que define a sua Saúde; três <strong>Trilhas de Poder afins</strong>, as que custam mais barato; e uma <strong>Vantagem racial</strong>.</p>
+<p>O que ela <strong>cobra</strong>: uma <strong>Falha racial</strong>, que é o preço permanente de ser o que você é, e uma <strong>Compulsão</strong>, que é o padrão de fábrica que volta à tona quando você quebra sob pressão.</p>
+<div class="races">
+<article class="race hud" id="raca-human">
+  <div class="race-shot">
+    <img src="img/multidao.webp" style="object-position:50% 72%" alt="Um humano encapuzado atravessando a multidão de neon." loading="lazy">
+    <div class="race-tag"><h3>Human</h3><span class="size">T3</span></div>
+  </div>
+  <p class="race-life">70–90 anos</p>
+  <dl class="race-body">
+    <div class="trait"><dt>Falha</dt><dd><em>Prey</em></dd></div>
+    <div class="trait"><dt>Compul.</dt><dd><em>Survival</em></dd></div>
+    <div class="trait up"><dt>Vant.</dt><dd><em>Perseverance</em></dd></div>
+  </dl>
+</article>
+<article class="race hud" id="raca-punk">
+  <div class="race-shot">
+    <img src="img/punk.webp" alt="Punk com as veias brilhando em azul sob a pele, encostado num muro pichado." loading="lazy">
+    <div class="race-tag"><h3>Punk</h3><span class="size">T3</span></div>
+  </div>
+  <p class="race-life">70–80 anos · Quirk</p>
+  <dl class="race-body">
+    <div class="trait"><dt>Falha</dt><dd><em>Devil&#x27;s Blood</em></dd></div>
+    <div class="trait"><dt>Compul.</dt><dd><em>Defiance</em></dd></div>
+    <div class="trait up"><dt>Vant.</dt><dd><em>Multi-Quirk</em>, <em>Zeal</em></dd></div>
+  </dl>
+</article>
+<article class="race hud" id="raca-cyberpunk">
+  <div class="race-shot">
+    <img src="img/cyberpunk.webp" alt="Ciborgue na oficina, olho ótico verde e braço mecânico exposto." loading="lazy">
+    <div class="race-tag"><h3>Cyberpunk</h3><span class="size">T3</span></div>
+  </div>
+  <p class="race-life">base +40 a 100</p>
+  <dl class="race-body">
+    <div class="trait"><dt>Falha</dt><dd><em>Maintenance</em></dd></div>
+    <div class="trait"><dt>Compul.</dt><dd><em>Optimization</em></dd></div>
+    <div class="trait up"><dt>Vant.</dt><dd><em>Hard Wired</em>, <em>Trick or Treat</em></dd></div>
+  </dl>
+</article>
+<article class="race hud" id="raca-android">
+  <div class="race-shot">
+    <img src="img/android.webp" alt="Android de cabelo rosa num laboratório, braço mecânico aberto." loading="lazy">
+    <div class="race-tag"><h3>Android</h3><span class="size">T3</span></div>
+  </div>
+  <p class="race-life">não envelhece</p>
+  <dl class="race-body">
+    <div class="trait"><dt>Falha</dt><dd><em>Soulless</em></dd></div>
+    <div class="trait"><dt>Compul.</dt><dd><em>Directive</em></dd></div>
+    <div class="trait up"><dt>Vant.</dt><dd><em>Null Signal</em></dd></div>
+  </dl>
+</article>
+<article class="race hud" id="raca-lycan">
+  <div class="race-shot">
+    <img src="img/lycan.webp" style="object-position:40% 30%" alt="Dois Lycans num beco de neon: um com plumagem de ave, outro de pele anfíbia." loading="lazy">
+    <div class="race-tag"><h3>Lycan</h3><span class="size">T3</span></div>
+  </div>
+  <p class="race-life">80–400 anos</p>
+  <dl class="race-body">
+    <div class="trait"><dt>Falha</dt><dd><em>The Beast Within</em></dd></div>
+    <div class="trait"><dt>Compul.</dt><dd><em>Instinct</em></dd></div>
+    <div class="trait up"><dt>Vant.</dt><dd><em>Predator</em></dd></div>
+  </dl>
+</article>
+<article class="race hud" id="raca-mecha">
+  <div class="race-shot">
+    <img src="img/mecha.webp" alt="Mecha colossal num hangar, um técnico minúsculo a seus pés." loading="lazy">
+    <div class="race-tag"><h3>Mecha</h3><span class="size">T5</span></div>
+  </div>
+  <p class="race-life">enquanto houver manutenção</p>
+  <dl class="race-body">
+    <div class="trait"><dt>Falha</dt><dd><em>Genki 元気</em></dd></div>
+    <div class="trait"><dt>Compul.</dt><dd><em>Tejun 手順</em></dd></div>
+    <div class="trait up"><dt>Vant.</dt><dd><em>Tosei Dō 統制道</em>, <em>Shashutsu 射出</em></dd></div>
+  </dl>
+</article>
+<article class="race hud" id="raca-other">
+  <div class="race-shot">
+    <img src="img/other.webp" style="object-position:50% 22%" alt="Um Other de quatro olhos conferindo a carga nas docas." loading="lazy">
+    <div class="race-tag"><h3>Other</h3><span class="size">T4</span></div>
+  </div>
+  <p class="race-life">300–1500 anos</p>
+  <dl class="race-body">
+    <div class="trait"><dt>Falha</dt><dd><em>Strange Flesh</em></dd></div>
+    <div class="trait"><dt>Compul.</dt><dd><em>Curiosity</em></dd></div>
+    <div class="trait up"><dt>Vant.</dt><dd><em>Star Trek</em></dd></div>
+  </dl>
+</article>
+<article class="race hud" id="raca-anunnaki">
+  <div class="race-shot">
+    <img src="img/anunnaki.webp" alt="Dois Anunnaki de manto observando o planeta de uma sacada orbital." loading="lazy">
+    <div class="race-tag"><h3>Anunnaki</h3><span class="size">T4</span></div>
+  </div>
+  <p class="race-life">não envelhece</p>
+  <dl class="race-body">
+    <div class="trait"><dt>Falha</dt><dd><em>Law of the Father</em></dd></div>
+    <div class="trait"><dt>Compul.</dt><dd><em>Dominion</em></dd></div>
+    <div class="trait up"><dt>Vant.</dt><dd><em>Miracle</em>, <em>Divine Survival</em></dd></div>
+  </dl>
+</article>
+<article class="race hud" id="raca-nefilin">
+  <div class="race-shot">
+    <img src="img/nefilin.webp" style="object-position:26% 34%" alt="Nefilin de asas abertas atravessando um templo de mármore branco." loading="lazy">
+    <div class="race-tag"><h3>Nefilin</h3><span class="size">T4</span></div>
+  </div>
+  <p class="race-life">milênios · Quirk</p>
+  <dl class="race-body">
+    <div class="trait"><dt>Falha</dt><dd><em>Law of the Son</em></dd></div>
+    <div class="trait"><dt>Compul.</dt><dd><em>Legacy</em></dd></div>
+    <div class="trait up"><dt>Vant.</dt><dd><em>Fallen Angel</em>, <em>Untainted</em></dd></div>
+  </dl>
+</article>
+<article class="race hud" id="raca-youkai">
+  <div class="race-shot">
+    <img src="img/youkai.webp" alt="Youkai de chifres fumando na calçada, neon vermelho ao fundo." loading="lazy">
+    <div class="race-tag"><h3>Youkai</h3><span class="size">T4</span></div>
+  </div>
+  <p class="race-life">não envelhece</p>
+  <dl class="race-body">
+    <div class="trait"><dt>Falha</dt><dd><em>Hole in My Soul</em></dd></div>
+    <div class="trait"><dt>Compul.</dt><dd><em>In Love With Judas</em></dd></div>
+    <div class="trait up"><dt>Vant.</dt><dd><em>Sympathy for the Devil</em>, <em>Touch My Body</em>, <em>Bad to the Bone</em></dd></div>
+  </dl>
+</article>
+<article class="race hud" id="raca-hanyou">
+  <div class="race-shot">
+    <img src="img/hanyou.webp" alt="Han&#x27;you de chifres e cauda num campo de batalha em chamas." loading="lazy">
+    <div class="race-tag"><h3>Han&#x27;you</h3><span class="size">T3</span></div>
+  </div>
+  <p class="race-life">100–700 anos · Quirk</p>
+  <dl class="race-body">
+    <div class="trait"><dt>Falha</dt><dd><em>Maleficent</em></dd></div>
+    <div class="trait"><dt>Compul.</dt><dd><em>Appetite</em></dd></div>
+    <div class="trait up"><dt>Vant.</dt><dd><em>Devilicious</em>, <em>Sensual Seduction</em>, <em>V of Violence</em></dd></div>
+  </dl>
+</article>
+</div>
+<h3 id="g-a-tabela"><span>A tabela</span><a class="anchor" href="#g-a-tabela" aria-label="Link para esta seção">#</a></h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Raça</th>
+<th>Tam.</th>
+<th>Longevidade</th>
+<th>Trilhas afins</th>
+<th>Quirk</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Human</strong></td>
+<td>3</td>
+<td>70–90 anos</td>
+<td>Bond · Grit · uma livre</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Punk</strong></td>
+<td>3</td>
+<td>70–80 anos</td>
+<td>a sua Quirk · Grit · Bond</td>
+<td><strong>Sim</strong></td>
+</tr>
+<tr>
+<td><strong>Cyberpunk</strong></td>
+<td>3</td>
+<td>base +40 a 100</td>
+<td>a sua Quirk · Improvement · uma da raça-base</td>
+<td><strong>D</strong><strong>e</strong><strong>pe</strong><strong>nde</strong></td>
+</tr>
+<tr>
+<td><strong>Android</strong></td>
+<td>3</td>
+<td>não envelhece</td>
+<td>System · Improvement · Precision</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Lycan</strong></td>
+<td>3</td>
+<td>80–400 anos</td>
+<td>Instinct · Mother Nature · Grit</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Mecha</strong></td>
+<td>5</td>
+<td>enquanto houver manutenção</td>
+<td>System · Bulwark · Precision</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Other</strong></td>
+<td>4</td>
+<td>300–1500 anos</td>
+<td>Proliferation · Bond · Instinct</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Anunnaki</strong></td>
+<td>4</td>
+<td>não envelhece</td>
+<td>Miracle · o seu Domain · Omniscience</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Nefilin</strong></td>
+<td>4</td>
+<td>milênios</td>
+<td>Wings · a sua Quirk · Miracle</td>
+<td><strong>Sim</strong></td>
+</tr>
+<tr>
+<td><strong>Youkai</strong></td>
+<td>4</td>
+<td>não envelhece</td>
+<td>Devour · Chaos · o seu Domain</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Han'you</strong></td>
+<td>3</td>
+<td>100–700 anos</td>
+<td>Appetite · a Quirk herdada · Allure</td>
+<td><strong>Sim</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>O Tamanho é fixo.</strong> Ele é definido pela raça na criação e não muda depois, exceto por três caminhos que têm preço: a Vantagem <strong>Gigante</strong> (4 pontos, +1 Tamanho, só na criação), o Defeito <strong>Frágil</strong> (2 pontos, −1 Tamanho) ou uma Trilha que diga isso explicitamente — MOTHER NATURE 4 e 5, IMPROVEMENT 5, o chassi pesado do Cyberpunk. Nesses casos o Tamanho muda enquanto o efeito durar, e a Saúde acompanha.</p>
+<h3 id="g-falhas-compulsões-e-vantagens"><span>Falhas, Compulsões e Vantagens</span><a class="anchor" href="#g-falhas-compulsões-e-vantagens" aria-label="Link para esta seção">#</a></h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Raça</th>
+<th>Falha racial</th>
+<th>Compulsão</th>
+<th>Vantagens raciais</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Human</strong></td>
+<td><em>Prey</em> — −2 em sociais com quem sabe o que você é. Nenhuma cura sobrenatural funciona em você</td>
+<td><em>Survival</em></td>
+<td><em>Perseverance</em> — uma vez por sessão, rerrole todos os dados de Tensão que deram 1. E gasta metade da experiência em Perícias</td>
+</tr>
+<tr>
+<td><strong>Punk</strong></td>
+<td><em>Devil's Blood</em> — num Colapso a sua Quirk dispara sozinha (ver abaixo)</td>
+<td><em>Defiance</em></td>
+<td><em>Multi-Quirk</em> — única raça que pode ter até duas Quirks. <em>Zeal</em> — com metade ou menos da Saúde, +2 dados de dano com a Quirk</td>
+</tr>
+<tr>
+<td><strong>Cyberpunk</strong></td>
+<td><em>Maintenance</em> — a cada arco sem cuidado, −1 dado cumulativo nas paradas que usem o sistema implantado</td>
+<td><em>Optimization</em></td>
+<td><em>Trick or Treat</em> — <strong>acrescenta</strong> a Falha e a Compulsão de uma raça-base (Human, Punk ou Lycan) às suas próprias. <em>Hard Wired</em> — os implantes contam como <strong>Blindagem pesada 1</strong> permanente, e golpes desarmados com o membro implantado causam dano <strong>agravado</strong> em vez de superficial</td>
+</tr>
+<tr>
+<td><strong>Android</strong></td>
+<td><em>Soulless</em> — nada que atue sobre almas funciona, nem o que ajudaria. EMP e energia divina são sempre agravados</td>
+<td><em>Directive</em></td>
+<td><em>Null Signal</em> — não pode ser localizado por meio mental ou espiritual. Só Magitek detecta você</td>
+</tr>
+<tr>
+<td><strong>Lycan</strong></td>
+<td><em>The Beast Within</em> — −2 em ambiente de estímulo intenso: multidão, explosão, fedor químico, luz forte</td>
+<td><em>Instinct</em></td>
+<td><em>Predator</em> — +2 dados em Sobrevivência, Furtividade e Percepção sensorial</td>
+</tr>
+<tr>
+<td><strong>Mecha</strong></td>
+<td><em>Genki</em> (元気) — não recupera Saúde naturalmente, só com técnico, laboratório ou fonte de energia. Trilha cheia é destruição, não inconsciência</td>
+<td><em>Tejun</em> (手順)</td>
+<td><em>Tosei Dō</em> (統制道) — Blindagem base 3, e reduz um agravado a superficial uma vez por cena. <em>Shashutsu</em> (射出) — antes de ser destruído, expele um micro-bot com backup da memória</td>
+</tr>
+<tr>
+<td><strong>Other</strong></td>
+<td><em>Strange Flesh</em> — medicina convencional não funciona. Tratamento de terceiros sofre −2, e substâncias comuns têm efeito imprevisível</td>
+<td><em>Curiosity</em></td>
+<td><em>Star Trek</em> — regenera membros amputados (não decapitação), sobrevive no vácuo, recupera 1 nível de Saúde por hora de descanso</td>
+</tr>
+<tr>
+<td><strong>Anunnaki</strong></td>
+<td><em>Law of the Father</em> — não pode agir contra um superior da sua linhagem sem gastar 2 agravados de Força de Vontade</td>
+<td><em>Dominion</em></td>
+<td><em>Miracle</em> — uma vez por sessão, altere um evento já ocorrido na cena. <em>Divine Survival</em> — não come, não dorme, imune a venenos e doenças, sobrevive em qualquer ambiente</td>
+</tr>
+<tr>
+<td><strong>Nefilin</strong></td>
+<td><em>Law of the Son</em> — num Colapso, você precisa agir para proteger o mais fraco da cena contra o mais poderoso. Se não o fizer, marque <strong>1 agravado</strong> de Força de Vontade</td>
+<td><em>Legacy</em></td>
+<td><em>Fallen Angel</em> — asas ocultáveis e voo pleno. <em>Untainted</em> — imune a degeneração por defeitos, embora possa enlouquecer normalmente</td>
+</tr>
+<tr>
+<td><strong>Youkai</strong></td>
+<td><em>Hole in My Soul</em> — Domains sagrados, Quirks purificadoras e armas Magitek causam contra você <strong>sempre dano agravado</strong>, e têm <strong>Perfuração 1</strong></td>
+<td><em>In Love With Judas</em></td>
+<td><em>Sympathy for the Devil</em> — recupera 1 superficial de Força de Vontade ao presenciar destruição significativa. <em>Touch My Body</em> — toque letal a pequenos seres vivos. <em>Bad to the Bone</em> — +2 dados de dano agravado desarmado</td>
+</tr>
+<tr>
+<td><strong>Han'you</strong></td>
+<td><em>Maleficent</em> — quanto menor a Moralidade, mais forte e menos humano você fica. Nunca pode elevar a Moralidade acima de 7</td>
+<td><em>Appetite</em></td>
+<td><em>Devilicious</em> — cura Saúde ao ferir alvos vivos. <em>Sensual Seduction</em> — +2 em sedução. <em>V of Violence</em> — se for metade Punk, o efeito da Quirk herdada de nível 1 é dobrado</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Devil's Blood, em detalhe.</strong> Num Colapso, a sua Quirk dispara sozinha, sem alvo escolhido. O Narrador aponta o que estiver mais perto de você — aliado, inimigo, objeto ou cenário — e aquilo sofre <strong>2 pontos de dano superficial</strong>, ou o efeito equivalente da Quirk quando ela não causa dano. Se a Quirk não tiver como atingir outra pessoa quem sofre o descontrole é <strong>você</strong>: marque os 2 pontos na sua própria Saúde.</p>
+<p><strong>Law of the Son, em detalhe.</strong> Os Nefilins são filhos de Anunnaki com outras raças, e os Anunnaki nunca os aceitaram como iguais nem os admitiram na hierarquia. O sangue cobra assim mesmo — só que ao contrário. Onde o pai obedece ao mais forte, o filho protege o mais fraco.</p>
+<p>Num <strong>Colapso</strong>, olhe a cena: há alguém sendo oprimido por alguém mais poderoso? Se há, a sua próxima ação tem de ser proteger esse alguém. Se você não agir — por cálculo, por medo ou porque o plano dizia outra coisa — marque <strong>1 agravado de Força de Vontade</strong>. Se não houver opressão nenhuma na cena, a Falha não cobra nada desta vez.</p>
+<p>Isso engatilha nos seus próprios dados, e não depende de o Narrador matar ninguém. Em números: um Nefilin de Autocontrole 3 tem 0,8 Colapso por sessão, e a recuperação de agravado é de 1 por sessão — ele aguenta recusar quase sempre. Um de Autocontrole 5 tem 2,2 Colapsos por sessão: se ignorar os fracos de forma sistemática, afunda em poucas sessões. É esse o ponto.</p>
+<p><strong>Hard Wired, em detalhe.</strong> A Blindagem pesada 1 dos implantes é permanente e não soma com colete — use o maior dos dois. E o golpe desarmado com o membro implantado passa a causar dano <strong>agravado</strong>, sem a divisão por dois: um soco de margem 3 marca 3 pontos, e não 1. Isso triplica o dano desarmado do Cyberpunk, mas ainda o deixa <strong>abaixo</strong> de qualquer arma de verdade — a faca +2 faz mais. O ganho real é outro: você não pode ser desarmado, revistado nem ficar sem munição.</p>
+<h3 id="g-como-ler-o-tamanho"><span>Como ler o Tamanho</span><a class="anchor" href="#g-como-ler-o-tamanho" aria-label="Link para esta seção">#</a></h3>
+<p>Tamanho não é só altura: é massa e quanto castigo o corpo aguenta. <strong>A sua Saúde é igual a Vigor mais Tamanho.</strong></p>
+<ul>
+<li><strong>3</strong> — humanoide, de 1,6 m a 2,2 m. A maioria.</li>
+<li><strong>4</strong> — grande, até 3,5 m.</li>
+<li><strong>5</strong> — colossal, acima disso.</li>
+</ul>
+<h3 id="g-sobre-a-compulsão"><span>Sobre a Compulsão</span><a class="anchor" href="#g-sobre-a-compulsão" aria-label="Link para esta seção">#</a></h3>
+<p>Toda raça tem uma, e ela só aparece quando você tira <strong>três falhas</strong> nos dados de Tensão (seção 5). Não é loucura: é o que você era antes de aprender a se comportar.</p>
+<p>Cada Compulsão é um <strong>impulso</strong>, não uma ação específica — ela sempre encontra onde se descarregar, mesmo numa cena que não tem o alvo óbvio.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Compulsão</th>
+<th>O impulso</th>
+<th>Em combate</th>
+<th>Fora de combate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><em>Defiance</em></td>
+<td>Provar que ninguém manda em você</td>
+<td>Ataque o inimigo mais forte da cena, ignorando o alvo fácil e o plano</td>
+<td>Quebre a ordem, a regra, o acordo ou a fechadura à sua frente, na frente de alguém</td>
+</tr>
+<tr>
+<td><em>Survival</em></td>
+<td>Garantir que existe uma saída antes de se comprometer</td>
+<td>A sua ação cria ou protege a rota: cobertura, porta aberta, quem bloqueia o corredor. Não é fugir — é não avançar enquanto não houver saída</td>
+<td>Mapeie a saída, esconda um recurso reserva, garanta um seguro antes de fechar qualquer negócio</td>
+</tr>
+<tr>
+<td><em>Optimization</em></td>
+<td>Nada fica como está se pode ficar melhor</td>
+<td>Gaste a ação no equipamento primeiro: recarregar, reassentar o implante, recalibrar</td>
+<td>Desmonte, ajuste ou troque a peça de alguém, mesmo sem pedirem</td>
+</tr>
+<tr>
+<td><em>Directive</em></td>
+<td>Uma ordem antiga voltou, e tem prioridade</td>
+<td>Cumpra o protocolo mesmo quando é taticamente errado</td>
+<td>Execute a ordem literalmente, na frente de quem for</td>
+</tr>
+<tr>
+<td><em>Instinct</em></td>
+<td>Resolver com o corpo, agora</td>
+<td>Feche distância e ataque corpo a corpo o mais próximo. Nada de arma de fogo, nada de esperar</td>
+<td>Intimide, arrombe, persiga. A conversa acabou</td>
+</tr>
+<tr>
+<td><em>Tejun</em></td>
+<td>A sequência correta, inteira e na ordem</td>
+<td>Complete o procedimento: Mirar antes de disparar, verificar antes de avançar. Nenhuma ação improvisada</td>
+<td>Nenhum passo pulado, mesmo com a casa pegando fogo</td>
+</tr>
+<tr>
+<td><em>Curiosity</em></td>
+<td>Precisa saber o que é aquilo</td>
+<td>Gaste a ação examinando o que você não entende na cena</td>
+<td>Abra, toque, prove, leia. Sobretudo o que estiver marcado como proibido</td>
+</tr>
+<tr>
+<td><em>Dominion</em></td>
+<td>A sua vontade prevalece, e todos veem</td>
+<td>Antes de atacar, declare a sua exigência em voz que alcance o inimigo</td>
+<td>Imponha a decisão publicamente, mesmo quando negociar sairia mais barato</td>
+</tr>
+<tr>
+<td><em>Legacy</em></td>
+<td>Isto precisa ser lembrado</td>
+<td>Torne o ato memorável e testemunhado. Nada feito no escuro</td>
+<td>Deixe registro, marca, herdeiro ou monumento antes de sair da cena</td>
+</tr>
+<tr>
+<td><em>In Love With Judas</em></td>
+<td>Isto pode piorar, e você sabe como</td>
+<td>Faça a coisa que escala: estourar o tanque, derrubar a estrutura, soltar o prisioneiro</td>
+<td>Revele o segredo, quebre o acordo, acenda o pavio</td>
+</tr>
+<tr>
+<td><em>Appetite</em></td>
+<td>Consumir algo de alguém que está aqui</td>
+<td>Feche até alcance de toque e tome: sangue, dor, fôlego, calor</td>
+<td>Arranque de alguém presente um segredo, um prazer ou uma humilhação</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Como a Compulsão funciona na mesa.</strong> Ela dita a sua <strong>próxima ação</strong>. Você a executa, e ela termina. Se recusar, marque 1 superficial de Força de Vontade e role aquela ação com <strong>−2 dados</strong> — e ela continua exigindo, turno a turno, até você ceder ou até ela fazer você falhar de um jeito que todo mundo veja.</p>
+<blockquote>
+<p>Compulsão bem interpretada rende experiência. Está no critério de ganho por sessão, no Anexo D.</p>
+</blockquote>
+<h2 id="g-4-o-sistema-em-poucas-linhas"><span class="sec">SEC.04</span><span>O sistema em poucas linhas</span><a class="anchor" href="#g-4-o-sistema-em-poucas-linhas" aria-label="Link para esta seção">#</a></h2>
+<blockquote>
+<p>Use quantos dados de dez faces forem necessários: role <strong>Atributo + Perícia</strong>. Resultado <strong>6 ou mais</strong> é sucesso. Resultado <strong>10 explode</strong>: role aquele dado de novo e conte também; se der 10 outra vez, repita.</p>
+<p>Um número de dados igual ao seu <strong>Autocontrole</strong> são <strong>dados de Tensão</strong>. É neles que os extremos contam: os <strong>uns</strong> cobram e os <strong>dez</strong> pagam, e quanto mais Autocontrole você tem, mais grave fica nos dois sentidos. Os dados normais também produzem efeito, só que leve.</p>
+<p><strong>Saúde</strong> = Vigor + Tamanho. <strong>Força de Vontade</strong> = Autocontrole + Perseverança. <strong>Dados de Tensão</strong> = Autocontrole.</p>
+<p>Dano vem em dois tipos, e as duas trilhas marcam os dois: <strong>superficial</strong> (<code>/</code>) é hematoma e exaustão, e divide por dois antes de marcar; <strong>agravado</strong> (<code>X</code>) é osso quebrado e ferimento aberto, e marca por inteiro. Trilha cheia = <strong>Debilitado</strong>. A seção 7 detalha.</p>
+</blockquote>
+<p>É isso. O resto deste guia é explicação.</p>
+<h3 id="g-a-rolagem-passo-a-passo"><span>A rolagem, passo a passo</span><a class="anchor" href="#g-a-rolagem-passo-a-passo" aria-label="Link para esta seção">#</a></h3>
+<p><strong>Passo 1 — monte a parada.</strong> Some o Atributo mais a Perícia que o Narrador pedir. Esse é o número de dados de dez faces que você rola.</p>
+<blockquote>
+<p>Strauss pretende hackear um sistema inimigo. Usa <strong>Inteligência 4</strong> e a perícia <strong>Informática 3</strong>: são 7d10. Ele tem a especialização "hacking", que garante <strong>+1 dado</strong>. No total, Strauss rola <strong>8d10</strong>.</p>
+</blockquote>
+<p><strong>Passo 2 — conte os sucessos.</strong> Cada dado que mostrar <strong>6, 7, 8, 9 ou 10</strong> é um sucesso. Dados de 1 a 5 não valem nada.</p>
+<p><strong>Passo 3 — explosões.</strong> Todo dado que mostrar <strong>10</strong> vale um sucesso <strong>e é rolado de novo</strong>. Se o novo dado também der 10, explode outra vez, sem limite. <strong>O dado gerado pela explosão de um dado de Tensão continua sendo de Tensão</strong> — vale para o 1 e para o 10.</p>
+<p><strong>Passo 4 — compare com a dificuldade.</strong> A dificuldade não é o número no dado: é <strong>quantos sucessos você precisa juntar</strong>.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Dificuldade</th>
+<th>Situação</th>
+<th>Chance com 6 dados</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Trivial, mas sob pressão</td>
+<td>98%</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Padrão</td>
+<td>90%</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Difícil</td>
+<td>70%</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Muito difícil</td>
+<td>43%</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Quase impossível</td>
+<td>21%</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Passo 5 — a margem.</strong> Sucessos acima da dificuldade formam a <strong>margem</strong>. É ela que vira dano em combate e qualidade em tudo o mais. Passar raspando e passar com folga não são a mesma coisa.</p>
+<h3 id="g-exemplo-completo"><span>Exemplo completo</span><a class="anchor" href="#g-exemplo-completo" aria-label="Link para esta seção">#</a></h3>
+<p>Bartlett é um Punk com <strong>Destreza 3</strong> e <strong>Armas de Fogo 3</strong>. Ele atira num guarda a vinte metros, em campo aberto. O Narrador pede <strong>Autocontrole + Armas de Fogo</strong>, porque ele está sob fogo. O Autocontrole dele é 3, então a parada é <strong>3 + 3 = 6 dados</strong>, dos quais os três primeiros são de Tensão.</p>
+<p>Ele rola: <code>9, 4, 10, 2, 7, 1</code></p>
+<ul>
+<li>O <strong>9</strong> é sucesso.</li>
+<li>O <strong>4</strong> não vale nada.</li>
+<li>O <strong>10</strong> é sucesso <strong>e explode</strong>. Ele rola esse dado de novo e tira <strong>8</strong>: mais um sucesso.</li>
+<li>O <strong>2</strong> não vale nada.</li>
+<li>O <strong>7</strong> é sucesso.</li>
+<li>O <strong>1</strong> caiu no sexto dado, que <strong>não</strong> era de Tensão. Sozinho, não produz nada.</li>
+</ul>
+<p><strong>Total: 4 sucessos.</strong> O guarda se defende com Destreza + Atletismo, jogando-se para o lado, e tira 2 sucessos. Margem de Bartlett: <strong>4 − 2 = 2</strong>. O rifle dele soma <strong>+3</strong> de dano, e o guarda leva <strong>2 + 3 = 5 pontos</strong> de dano agravado.</p>
+<h3 id="g-três-coisas-que-sempre-valem"><span>Três coisas que sempre valem</span><a class="anchor" href="#g-três-coisas-que-sempre-valem" aria-label="Link para esta seção">#</a></h3>
+<p><strong>Fracasso total</strong> é zero sucessos. Não é só "não deu": alguma coisa piora. O Narrador é obrigado a dar uma consequência.</p>
+<p><strong>Teste disputado</strong> é quando dois lados rolam e vence quem tiver mais sucessos. Empate mantém tudo como estava — <strong>exceto em combate</strong>, onde os dois se acertam com margem 1 (seção 8).</p>
+<p><strong>Gastar Força de Vontade</strong> permite, uma vez por cena, rerrolar até três dados normais ao custo de <strong>1 ponto agravado</strong>. Nunca dados de Tensão.</p>
+<h2 id="g-5-dados-de-tensão"><span class="sec">SEC.05</span><span>Dados de Tensão</span><a class="anchor" href="#g-5-dados-de-tensão" aria-label="Link para esta seção">#</a></h2>
+<p>Esta é a única regra que PlanetHell tem e outros jogos não têm. Entenda esta seção e você entendeu o sistema.</p>
+<h3 id="g-como-funciona"><span>Como funciona</span><a class="anchor" href="#g-como-funciona" aria-label="Link para esta seção">#</a></h3>
+<blockquote>
+<p>Um número de dados da sua parada <strong>igual ao seu Autocontrole</strong> são dados de Tensão. Use algo para diferenciá-los: cores, símbolos, ou apenas os dados de dez faces que representam a dezena (10, 20, 30... 00).</p>
+</blockquote>
+<p>Eles contam sucessos e explodem como qualquer outro. A diferença está nos extremos: <strong>os uns</strong> e <strong>os dez</strong>.</p>
+<p>Não há medidor para controlar. O número é fixo, já está na sua ficha, e não muda de cena para cena. Se a sua parada for menor que o seu Autocontrole, todos os dados são de Tensão.</p>
+<h3 id="g-a-escada"><span>A escada</span><a class="anchor" href="#g-a-escada" aria-label="Link para esta seção">#</a></h3>
+<p>Os dois tipos de dado produzem efeito. A diferença está no <strong>grau</strong>: o dado de Tensão dá o grave, o dado normal dá o leve.</p>
+<div class="tablewrap"><table id="ladder">
+<thead>
+<tr>
+<th>Saiu</th>
+<th>Nome</th>
+<th>O que acontece</th>
+</tr>
+</thead>
+<tbody>
+<tr class="cobra" data-r="contratempo">
+<td>2 ou mais <strong>uns em dados normais</strong></td>
+<td><strong>Contratempo</strong></td>
+<td>Só narrativo. A cena fica mais difícil, a ficha não muda</td>
+</tr>
+<tr class="cobra" data-r="tensao">
+<td>1 <strong>um na Tensão</strong></td>
+<td><strong>Tensão</strong></td>
+<td>Complicação séria de cena. Você <strong>pode</strong> marcar 1 superficial de Força de Vontade para reduzi-la a um detalhe</td>
+</tr>
+<tr class="cobra" data-r="colapso">
+<td>2 <strong>uns na Tensão</strong></td>
+<td><strong>Colapso</strong></td>
+<td>1 superficial de Força de Vontade + consequência grave, obrigatória. Dispara a <strong>Falha racial</strong></td>
+</tr>
+<tr class="cobra" data-r="compulsao">
+<td>3 ou mais <strong>uns na Tensão</strong></td>
+<td><strong>Compulsão</strong></td>
+<td>1 agravado de Força de Vontade + a <strong>Compulsão da sua raça</strong> assume</td>
+</tr>
+<tr class="paga" data-r="lampejo">
+<td>2 ou mais <strong>dez em dados normais</strong></td>
+<td><strong>Lampejo</strong></td>
+<td>Devolve 1 superficial de Força de Vontade, ou uma vantagem tática pequena</td>
+</tr>
+<tr class="paga" data-r="sobrecarga">
+<td>2 <strong>dez na Tensão</strong></td>
+<td><strong>Sobrecarga</strong></td>
+<td>Devolve 1 superficial de Força de Vontade <strong>e</strong> dá vantagem tática na cena</td>
+</tr>
+<tr class="paga" data-r="despertar">
+<td>3 ou mais <strong>dez na Tensão</strong></td>
+<td><strong>Despertar</strong></td>
+<td>Ver seção 6</td>
+</tr>
+</tbody>
+</table></div>
+      <div class="hud roller" id="rolador">
+        <h3>Rolador de parada</h3>
+        <p class="sub">Monte a parada e role. A escada acima acende no degrau que saiu.</p>
+        <div class="controls">
+          <div class="ctl"><label for="r-pool">Parada</label><select id="r-pool"></select></div>
+          <div class="ctl"><label for="r-auto">Autocontrole</label><select id="r-auto"></select></div>
+          <div class="ctl"><label for="r-dif">Dificuldade</label><select id="r-dif"></select></div>
+        </div>
+        <button class="btn" id="r-go" type="button">Rolar</button>
+        <div class="tray" id="r-tray" aria-live="polite"></div>
+        <div class="legend"><i><span class="sw t"></span>Tensão</i><i><span class="sw"></span>Normal</i><i>↻ explosão</i></div>
+        <div class="readout" id="r-out"></div>
+      </div>
+
+
+<p>Os uns contam <strong>sempre</strong>, mesmo quando a ação deu certo. É daí que sai o tom do jogo: você consegue o que queria, e alguém paga.</p>
+<p>A escala de estrago, para o Narrador calibrar:</p>
+<ul>
+<li><strong>Contratempo</strong> — o barulho chama atenção, a luz acende, você perde tempo.</li>
+<li><strong>Tensão</strong> — a arma emperra, você perde a posição, um recurso se perde.</li>
+<li><strong>Colapso</strong> — alguém importante é ferido ou se volta contra você, uma rota de fuga fecha, uma verdade sua vaza.</li>
+<li><strong>Compulsão</strong> — um aliado cai, o plano desmonta, um inimigo maior chega, algo irreversível acontece.</li>
+</ul>
+<h3 id="g-quando-os-dois-saem-juntos"><span>Quando os dois saem juntos</span><a class="anchor" href="#g-quando-os-dois-saem-juntos" aria-label="Link para esta seção">#</a></h3>
+<p>Acontece, e é o resultado mais interessante que o sistema produz: um triunfo que custou caro.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Saiu</th>
+<th>Resultado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sobrecarga ou Lampejo + Tensão</td>
+<td><strong>Anulam-se.</strong> Nada muda na Força de Vontade</td>
+</tr>
+<tr>
+<td>Despertar + qualquer coisa</td>
+<td><strong>O Despertar devolve todo o superficial. O agravado sempre fica</strong></td>
+</tr>
+<tr>
+<td>Sobrecarga + Colapso</td>
+<td><strong>Não se anulam.</strong> A recuperação é superficial, o dano é superficial: cancelam. A consequência grave do Colapso permanece</td>
+</tr>
+<tr>
+<td>Sobrecarga + Compulsão</td>
+<td>O agravado fica, por mais espetacular que tenha sido o acerto</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p>Atenção: <strong>a anulação é contábil, não narrativa.</strong> O dado que saiu 1 ainda piorou alguma coisa na cena, mesmo quando a Força de Vontade não muda.</p>
+</blockquote>
+<h3 id="g-exemplo"><span>Exemplo</span><a class="anchor" href="#g-exemplo" aria-label="Link para esta seção">#</a></h3>
+<p>Bartlett tem <strong>Autocontrole 3</strong>. Dos seis dados dele, três são de Tensão. Ele rolou <code>9, 4, 10, 2, 7, 1</code>, e os três primeiros eram os de Tensão.</p>
+<ul>
+<li>O <strong>10</strong> foi num dado de Tensão e explodiu dando 8. Um dez ao todo: nenhuma Sobrecarga.</li>
+<li>O <strong>1</strong> foi no sexto dado, que <strong>não</strong> era de Tensão. Sozinho, não é nem Contratempo — seriam precisos dois.</li>
+</ul>
+<p>Sorte dele. Se aquele 1 tivesse caído num dos três primeiros, ele teria acertado o tiro <strong>e</strong> enfrentado uma complicação séria — com a escolha de engolir a complicação ou gastar 1 de Força de Vontade para reduzi-la a um detalhe.</p>
+<h2 id="g-6-o-despertar"><span class="sec">SEC.06</span><span>O Despertar</span><a class="anchor" href="#g-6-o-despertar" aria-label="Link para esta seção">#</a></h2>
+<p><strong>Três ou mais dez nos dados de Tensão numa única rolagem.</strong> É o ápice da sorte e o momento em que alguma coisa dentro do personagem cede e deixa passar mais do que devia.</p>
+<h3 id="g-na-hora"><span>Na hora</span><a class="anchor" href="#g-na-hora" aria-label="Link para esta seção">#</a></h3>
+<ol>
+<li><strong>A ação é um sucesso absoluto.</strong> Ignore a dificuldade. Aconteceu do jeito mais impossível possível.</li>
+<li><strong>Todos os seus poderes funcionam sem custo e com mais três dados</strong> até o fim da cena.</li>
+<li><strong>Recupera toda a Força de Vontade superficial.</strong></li>
+<li>Ao fim da cena, você marca <strong>um ponto de Despertar</strong> e sofre uma <strong>Consequência</strong>.</li>
+</ol>
+<h3 id="g-a-trilha"><span>A trilha</span><a class="anchor" href="#g-a-trilha" aria-label="Link para esta seção">#</a></h3>
+<p>Vai de 0 a 5. Todo personagem começa em zero, e <strong>Despertar não se compra com experiência</strong> — só se conquista nos dados.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Nível</th>
+<th>Ganho permanente</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>+1 no máximo de Força de Vontade. +1 dado em poderes de nível 1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>A sua trilha principal ganha <strong>um nível de graça</strong>. +1 dado em níveis 1 e 2</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Recupera 1 nível de dano superficial de Saúde <strong>por turno</strong>. +2 dados em níveis 1 a 3</td>
+</tr>
+<tr>
+<td>4</td>
+<td>+1 no máximo de <strong>um Atributo</strong> à escolha — pode passar de 5. +2 dados em qualquer poder</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Ascensão</strong></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="g-a-ascensão"><span>A Ascensão</span><a class="anchor" href="#g-a-ascensão" aria-label="Link para esta seção">#</a></h3>
+<p><strong>Despertar 5 é a Ascensão.</strong> O que dormia no seu DNA — ou na sua alma — explode de uma vez, e o seu personagem ultrapassa os limites do que este mundo consegue compreender. Ele continua na mesa, mas não é mais o mesmo: cada raça ascende de um jeito, e um poder desse tamanho nunca passa despercebido. Toda Ascensão rompe um limite da raça — e traz junto o seu preço.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Raça</th>
+<th>Ascensão</th>
+<th>O que ganha</th>
+<th>O que vem junto</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Human</strong></td>
+<td><em>Anomaly</em></td>
+<td>Nenhum poder novo. +1 em qualquer Atributo e <strong>imunidade ao Arrebatamento</strong></td>
+<td>Um humano que Desperta cinco vezes continua humano, e é isso que assusta. Colecionadores passam a pagar em ouro, e um dos Reis Magos quer saber por quê</td>
+</tr>
+<tr>
+<td><strong>Punk</strong></td>
+<td><em>Trinity</em></td>
+<td>Uma <strong>terceira Quirk</strong>, acima do limite de duas do <em>Multi-Quirk</em>, e as existentes deixam de disparar sozinhas</td>
+<td>Cientistas o querem em mesa de laboratório, exércitos em contrato, cultos em altar. O Defeito Caçado 3 entra de graça</td>
+</tr>
+<tr>
+<td><strong>Cyberpunk</strong></td>
+<td><em>Full Metal Soul</em></td>
+<td>A prótese vira biomagitek integral: sem manutenção, sem rejeição, e os implantes contam como corpo para efeito de cura</td>
+<td>Você deixou de ser a raça-base. A Falha e a Compulsão adotadas caem, e a <em>Optimization</em> vira permanente</td>
+</tr>
+<tr>
+<td><strong>Android</strong> e <strong>Mecha</strong></td>
+<td><em>Deathless</em></td>
+<td>Trilha cheia de Saúde vira desligamento, com religação na cena seguinte. O <em>Shashutsu</em> deixa de precisar de corpo pronto</td>
+<td>Você vira patrimônio. Quem construiu a sua linha vem cobrar a patente, e <em>Soulless</em> continua valendo</td>
+</tr>
+<tr>
+<td><strong>Lycan</strong></td>
+<td><em>Apex</em></td>
+<td>A forma plena deixa de ter duração, e o Tamanho sobe 1 permanentemente</td>
+<td><em>The Beast Within</em> dobra: −4 em ambiente intenso. E ninguém mais confunde você com gente</td>
+</tr>
+<tr>
+<td><strong>Other</strong></td>
+<td><em>Panspermia</em></td>
+<td>Adaptação plena: sobrevive e age em qualquer ambiente, os dois Nexus inclusive</td>
+<td><em>Strange Flesh</em> vira absoluta. Nenhum tratamento de terceiros funciona mais</td>
+</tr>
+<tr>
+<td><strong>Anunnaki</strong></td>
+<td><em>Apotheosis</em></td>
+<td>Deixa de ser deus menor do seu Domain e passa a ser o deus maior dele. <em>Miracle</em> passa a 2× por sessão</td>
+<td><em>Law of the Father</em> deixa de protegê-lo: agora <strong>você</strong> é o superior, e a linhagem inteira olha para o seu lugar</td>
+</tr>
+<tr>
+<td><strong>Nefilin</strong></td>
+<td><em>Seraph</em></td>
+<td>O segundo par de asas se abre. Voo, Domain e <em>Miracle</em> sobem um nível de escala</td>
+<td><em>Law of the Son</em> deixa de esperar o Colapso: agora <strong>toda</strong> cena de opressão cobra de você, tenha havido rolagem ou não</td>
+</tr>
+<tr>
+<td><strong>Youkai</strong></td>
+<td><em>Faithless</em></td>
+<td><strong>A fé perde a mão em você.</strong> <em>Hole in My Soul</em> deixa de valer: Domains sagrados, Quirks purificadoras e armas Magitek voltam a causar dano normal, sem agravado automático e sem Perfuração</td>
+<td>O corte é nos dois sentidos. Nenhuma bênção, cura sagrada, trégua ritual ou solo consagrado funciona <strong>a seu favor</strong> — e Romania e Meca passam a saber o seu nome verdadeiro</td>
+</tr>
+<tr>
+<td><strong>Han'you</strong></td>
+<td><em>Wholeness</em></td>
+<td>O sangue para de brigar consigo mesmo: o teto de Moralidade 7 cai, e <em>Maleficent</em> passa a dar força <strong>sem</strong> exigir a queda</td>
+<td>A metade que você reprimia agora tem voz. <em>Appetite</em> dispara com <strong>duas</strong> falhas, não três</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="g-o-preço"><span>O preço</span><a class="anchor" href="#g-o-preço" aria-label="Link para esta seção">#</a></h3>
+<p>Cada Despertar traz uma Consequência. Role 1d10 ou escolha:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>d10</th>
+<th>Consequência</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Marca visível.</strong> Algo no seu corpo mudou para sempre e não dá para esconder</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Colateral.</strong> Alguma coisa próxima foi destruída pelo excesso, e não é pouco</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Atenção.</strong> Uma entidade poderosa sentiu. Ela vem, e não vem sozinha</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Preço de carne.</strong> Perde 1 ponto de um Atributo, permanentemente</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Ruído.</strong> Máquinas e sistemas falham num raio de quilômetros. Você fica localizável</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>Lembrança alheia.</strong> Você recebe uma memória que não é sua</td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>Rachadura.</strong> Força de Vontade máxima cai 1, permanentemente</td>
+</tr>
+<tr>
+<td>8</td>
+<td><strong>Testemunha.</strong> Alguém viu. Alguém que não devia</td>
+</tr>
+<tr>
+<td>9</td>
+<td><strong>Sede.</strong> Daqui em diante, toda rolagem feita <strong>sob efeito</strong> de um poder ativo tem +1 dado de Tensão</td>
+</tr>
+<tr>
+<td>10</td>
+<td><strong>Dívida.</strong> Algo lhe emprestou esse poder. Um dia vem cobrar</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="g-o-que-muda-conforme-a-rolagem"><span>O que muda conforme a rolagem</span><a class="anchor" href="#g-o-que-muda-conforme-a-rolagem" aria-label="Link para esta seção">#</a></h3>
+<p>O efeito do Despertar depende do que você estava fazendo:</p>
+<ul>
+<li><strong>Num ataque desarmado</strong> — o golpe entra num ponto vital. Contra NPC figurante, incapacitado na hora, sem rolar dano.</li>
+<li><strong>Numa esquiva</strong> — você saiu antes do golpe chegar e terminou em posição melhor. O seu próximo ataque ganha +2 dados.</li>
+<li><strong>Num tiroteio</strong> — a posição do adversário deixa de existir: a cobertura cede, o tiro a atravessa, a arma dele trava.</li>
+<li><strong>Numa defesa com Quirk</strong> — a proteção se estende a todos os aliados na cena, sem custo adicional.</li>
+<li><strong>Num Teste de Remorso</strong> — o remorso é transformador: além de apagar as Manchas, recupere 1 ponto agravado de Força de Vontade.</li>
+</ul>
+<h2 id="g-7-saúde-força-de-vontade-e-moralidade"><span class="sec">SEC.07</span><span>Saúde, Força de Vontade e Moralidade</span><a class="anchor" href="#g-7-saúde-força-de-vontade-e-moralidade" aria-label="Link para esta seção">#</a></h2>
+<p>Você tem três trilhas na ficha. Duas marcam dano, uma marca quem você está virando.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Fórmula</th>
+<th>O que representa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Saúde</strong></td>
+<td>Vigor + Tamanho</td>
+<td>Quanto o corpo aguenta</td>
+</tr>
+<tr>
+<td><strong>Força de Vontade</strong></td>
+<td>Autocontrole + Perseverança</td>
+<td>Quanto a cabeça aguenta</td>
+</tr>
+</tbody>
+</table></div>
+<p>A <strong>Força de Vontade é o único medidor de pressão do jogo</strong>. Ela absorve o que os dados de Tensão produzem, paga todos os poderes e compra rerrolagens. Cuide dela.</p>
+<h3 id="g-os-dois-tipos-de-dano"><span>Os dois tipos de dano</span><a class="anchor" href="#g-os-dois-tipos-de-dano" aria-label="Link para esta seção">#</a></h3>
+<p><strong>Superficial</strong> é hematoma, torção, exaustão. Punhos, quedas, impacto. <strong>Divide-se por dois, arredondando para baixo, antes de marcar.</strong> Anota-se como uma barra <code>/</code>.</p>
+<p><strong>Agravado</strong> é osso quebrado, ferimento aberto. Armas de fogo, lâminas, fogo, energia divina, Magitek. <strong>Marca-se por inteiro.</strong> Anota-se como duas barras cruzadas <code>X</code>.</p>
+<blockquote>
+<p>Os pontos de Força de Vontade que você gasta para ativar um poder ou abafar uma Tensão são superficiais e <strong>não são divididos</strong>.</p>
+<p>Uma vez por cena, você pode rerrolar até três dados normais ao custo de <strong>1 ponto agravado</strong> de Força de Vontade.</p>
+</blockquote>
+<h3 id="g-debilitado"><span>Debilitado</span><a class="anchor" href="#g-debilitado" aria-label="Link para esta seção">#</a></h3>
+<p>Quando a trilha enche, de qualquer mistura dos dois tipos:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Trilha cheia</th>
+<th>Efeito</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Saúde</strong></td>
+<td>−2 dados em todas as paradas físicas</td>
+</tr>
+<tr>
+<td><strong>Força de Vontade</strong></td>
+<td>−2 dados em sociais e mentais, e <strong>nenhum poder pode ser ativado</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>A partir daí, cada ponto novo <strong>converte um superficial já marcado em agravado</strong>, um por um. Trilha cheia de agravado: na Saúde é morte ou destruição; na Força de Vontade, o personagem quebra e sai de cena.</p>
+<h3 id="g-recuperação"><span>Recuperação</span><a class="anchor" href="#g-recuperação" aria-label="Link para esta seção">#</a></h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>O que</th>
+<th>Quando</th>
+<th>Quanto</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Saúde superficial</td>
+<td>Início de cada sessão</td>
+<td>Pontos iguais ao <strong>Vigor</strong></td>
+</tr>
+<tr>
+<td>Vontade superficial</td>
+<td>Início de cada sessão</td>
+<td>O maior entre <strong>Autocontrole</strong> e <strong>Perseverança</strong></td>
+</tr>
+<tr>
+<td>Vontade superficial</td>
+<td>Ao cumprir o <strong>Desejo</strong> da sessão</td>
+<td>1 ponto</td>
+</tr>
+<tr>
+<td>Vontade agravada</td>
+<td>Sessão seguinte, se agiu conforme a <strong>Ambição</strong></td>
+<td>1 ponto</td>
+</tr>
+<tr>
+<td><strong>Saúde agravada</strong></td>
+<td>Ver abaixo</td>
+<td>Ver abaixo</td>
+</tr>
+</tbody>
+</table></div>
+<p>O dano agravado de Saúde tem três vias, e só uma delas é rápida:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Via</th>
+<th>Efeito</th>
+<th>Prazo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Medicina com equipamento comum</strong></td>
+<td>Estabiliza: o agravado para de piorar e passa a contar como superficial para efeito de penalidade. Não remove pontos</td>
+<td>Uma cena de tratamento</td>
+</tr>
+<tr>
+<td><strong>Medicina com equipamento Magitek</strong></td>
+<td>Remove pontos agravados iguais à metade da Medicina do médico</td>
+<td>Uma cena, e o dispositivo tem cargas</td>
+</tr>
+<tr>
+<td><strong>Trilha de cura</strong> (Proliferation, Miracle, Still)</td>
+<td>O que o nível da Trilha disser</td>
+<td>Imediato, pago em Força de Vontade de quem cura</td>
+</tr>
+</tbody>
+</table></div>
+<p>Isso explica a Falha do Mecha (<em>Genki</em>: só técnico, laboratório ou fonte de energia) e a do Human (<em>Prey</em>: nenhuma cura sobrenatural, então sobram a linha comum e a Magitek).</p>
+<h3 id="g-moralidade"><span>Moralidade</span><a class="anchor" href="#g-moralidade" aria-label="Link para esta seção">#</a></h3>
+<p>Escala de 0 a 10. Você começa em <strong>7</strong>.</p>
+<p>Você marca uma <strong>Mancha</strong> quando viola os Preceitos da crônica ou uma das suas próprias Convicções. Ao fim da sessão, se houver Manchas, faça o <strong>Teste de Remorso</strong>: role dados iguais à sua <strong>Moralidade atual menos o número de Manchas</strong>.</p>
+<ul>
+<li><strong>Um sucesso ou mais</strong> — houve remorso. As Manchas somem, nada muda.</li>
+<li><strong>Fracasso total</strong> — Moralidade cai 1 ponto. As Manchas somem do mesmo jeito.</li>
+</ul>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Moralidade</th>
+<th>Estado</th>
+<th>Efeito</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>8 a 10</td>
+<td>Íntegro</td>
+<td>—</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Normal</td>
+<td>—</td>
+</tr>
+<tr>
+<td>5 a 6</td>
+<td>Endurecido</td>
+<td>−1 em sociais com quem não o conhece</td>
+</tr>
+<tr>
+<td>3 a 4</td>
+<td>Frio</td>
+<td>−2 em sociais</td>
+</tr>
+<tr>
+<td>1 a 2</td>
+<td>Monstruoso</td>
+<td>−3 em sociais. Compulsões duram o dobro</td>
+</tr>
+<tr>
+<td><strong>0</strong></td>
+<td><strong>Perdido</strong></td>
+<td>O personagem vira NPC: uma criatura do que sobrou dele</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Para subir</strong>, Moralidade custa <strong>novo valor × 10</strong> de experiência, no máximo 1 ponto por arco. É caro de propósito: recomprar do 3 ao 7 custa 220 XP, quase quinze sessões sem evoluir em mais nada. O Han'you nunca pode passar de 7.</p>
+<h3 id="g-os-preceitos-da-crônica"><span>Os Preceitos da crônica</span><a class="anchor" href="#g-os-preceitos-da-crônica" aria-label="Link para esta seção">#</a></h3>
+<p>Preceitos são as linhas que <strong>esta</strong> crônica considera intransponíveis. Não são moral universal e não valem para outra mesa: o Narrador escreve de três a cinco na primeira sessão, junto com os jogadores, e eles ficam à vista durante o jogo.</p>
+<p>Os quatro da crônica original, como ponto de partida:</p>
+<ol>
+<li>Não trate uma pessoa como ferramenta.</li>
+<li>Não tire de alguém a capacidade de escolher.</li>
+<li>Não abandone quem confiou em você.</li>
+<li>Não mate por vingança.</li>
+</ol>
+<blockquote>
+<p>O Preceito 2 é o pecado central deste mundo. Todo chip instalado, toda mente hackeada, todo milagre imposto, todo "salvamento" contra a vontade da pessoa é Mancha — inclusive quando é a coisa certa a fazer.</p>
+</blockquote>
+<h3 id="g-convicções-e-âncoras"><span>Convicções e Âncoras</span><a class="anchor" href="#g-convicções-e-âncoras" aria-label="Link para esta seção">#</a></h3>
+<p>Você tem de <strong>uma a três Convicções</strong>: frases curtas, concretas, na primeira pessoa. Esqueça a palavra "convicção" por um minuto e pergunte assim:</p>
+<blockquote>
+<p><strong>"Que coisa o meu personagem não faz, nem quando seria mais fácil fazer?"</strong></p>
+</blockquote>
+<p>Uma Convicção boa <strong>pode ser quebrada numa terça-feira qualquer</strong>. Se você não consegue imaginar uma cena em que seguir a sua regra vai custar caro, ela não é uma Convicção — é um enfeite.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Fraca demais</th>
+<th>Por quê</th>
+<th>Como ficaria melhor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"Acredito na justiça"</td>
+<td>Não diz o que você faz</td>
+<td>"Se eu vir alguém sendo espancado na rua, eu paro. Sempre"</td>
+</tr>
+<tr>
+<td>"Sou leal"</td>
+<td>Leal a quem, e até onde?</td>
+<td>"Eu não durmo enquanto alguém do meu grupo estiver lá fora"</td>
+</tr>
+<tr>
+<td>"Protejo os inocentes"</td>
+<td>Ninguém sabe quem é inocente</td>
+<td>"Criança não entra nessa conversa. Ponto"</td>
+</tr>
+<tr>
+<td>"Odeio os Anunnaki"</td>
+<td>Isso é opinião, não regra</td>
+<td>"Eu não aceito nada de graça de um deus"</td>
+</tr>
+<tr>
+<td>"Sou honesto"</td>
+<td>Cedo ou tarde você vai mentir</td>
+<td>"Eu minto pra quem quiser, menos pra quem já me salvou"</td>
+</tr>
+</tbody>
+</table></div>
+<p>Não precisa ser nobre. Convicção não é virtude: é a linha que <strong>essa pessoa</strong> não cruza. Alguns exemplos, de todo tipo de gente:</p>
+<ul>
+<li>"Ninguém que eu levo numa missão morre sozinho."</li>
+<li>"Se comi da comida de alguém, não roubo daquela casa."</li>
+<li>"Nunca mais trabalho para farda nenhuma."</li>
+<li>"Se me chamarem pelo meu nome antigo, eu não respondo."</li>
+<li>"Punk não entrega punk."</li>
+<li>"Máquina que fala comigo tem nome, e eu uso o nome."</li>
+<li>"Eu não ponho a mão em ninguém desacordado."</li>
+<li>"Eu conto até dez antes de sacar. Todo dia. Desde aquele dia."</li>
+</ul>
+<p><strong>E a Âncora?</strong> É mais simples do que parece: <strong>quem é a pessoa que faria você lembrar dessa regra se você fosse quebrá-la?</strong> Precisa ser alguém vivo e com nome.</p>
+<blockquote>
+<p>"Eu não ponho a mão em ninguém desacordado." — Âncora: <strong>Téo</strong>, o irmão mais novo, que apanhou dormindo.</p>
+</blockquote>
+<p>Se essa pessoa morrer, a Convicção fica suspensa até você encontrar outra âncora, e enquanto estiver suspensa você <strong>não pode usá-la para apagar Mancha</strong>. É duro, e é de propósito: as suas regras existem por causa de gente, não por causa de princípios.</p>
+<p><strong>Uso mecânico:</strong> uma vez por sessão, você pode <strong>apagar uma Mancha</strong> dizendo qual Convicção justificou o que você fez. Mentiu para salvar alguém? Se a sua Convicção é "eu minto pra quem quiser, menos pra quem já me salvou", a mentira não suja a sua ficha. É por isso que vale escrever Convicções que podem ser quebradas: uma regra que nunca entra em conflito com nada nunca vai te salvar de nada.</p>
+<h3 id="g-ambição-e-desejo"><span>Ambição e Desejo</span><a class="anchor" href="#g-ambição-e-desejo" aria-label="Link para esta seção">#</a></h3>
+<p><strong>Ambição</strong> é o seu objetivo da crônica inteira. Muda raramente, e agir conforme ela devolve 1 ponto agravado de Força de Vontade por sessão.</p>
+<p><strong>Desejo</strong> é o seu objetivo desta sessão. Cumpri-lo devolve 1 ponto superficial de Força de Vontade, e muda toda sessão.</p>
+<p>Alguns exemplos para dar a ideia:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Ambição (a crônica inteira)</th>
+<th>Desejo (uma sessão)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tirar a irmã de uma arca anunnaki antes do terceiro Arrebatamento</td>
+<td>Conseguir um lote de antibióticos sem dever favor a ninguém</td>
+</tr>
+<tr>
+<td>Derrubar o senhor da guerra de Sovia que vendeu a sua tribo</td>
+<td>Descobrir quem vazou o seu endereço</td>
+</tr>
+<tr>
+<td>Descobrir quem escreveu a Diretriz gravada no seu código — e apagá-la</td>
+<td>Juntar créditos suficientes para a manutenção do implante</td>
+</tr>
+<tr>
+<td>Comprar de volta a própria patente da corporação que fabricou você</td>
+<td>Fazer o informante falar sem sacar a arma</td>
+</tr>
+<tr>
+<td>Fundar em Night City um refúgio onde humanos não sejam mercadoria</td>
+<td>Voltar para casa antes de começarem as 44 horas de escuro</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="g-8-combate"><span class="sec">SEC.08</span><span>Combate</span><a class="anchor" href="#g-8-combate" aria-label="Link para esta seção">#</a></h2>
+<p>Combate é um <strong>teste disputado</strong>. Atacante e defensor rolam, comparam-se os sucessos, e quem tiver mais impõe a diferença como dano. <strong>A mesma rolagem resolve as duas coisas</strong> — não existe turno de ataque separado do de defesa.</p>
+<blockquote>
+<p><strong>Dano = Margem + Modificador da arma.</strong></p>
+<p><strong>Empate:</strong> cada um acerta o outro com margem 1, e esse dano é <strong>superficial</strong>. Ninguém está dando porrada com almofadas, mas um empate é um empate, não um duplo acerto limpo.</p>
+</blockquote>
+<h3 id="g-iniciativa-e-deslocamento"><span>Iniciativa e deslocamento</span><a class="anchor" href="#g-iniciativa-e-deslocamento" aria-label="Link para esta seção">#</a></h3>
+<p><strong>Iniciativa</strong> = Destreza + Autocontrole, mais 1d10 rolado na hora do combate. Em caso de empate, resolve-se pela ordem abaixo.</p>
+<p><strong>Deslocamento</strong> = Força + Destreza + 5 metros por rodada (+3 para criança). Você pode correr o dobro se não agir. Em grid, Deslocamento × 1,5.</p>
+<p>Quando a Iniciativa empata, age primeiro:</p>
+<ol>
+<li>Corpo a corpo <strong>já engajado</strong></li>
+<li><strong>Disparos</strong></li>
+<li>Corpo a corpo <strong>iniciado agora</strong></li>
+<li>Todo o resto</li>
+</ol>
+<h3 id="g-ataque-contra-defesa"><span>Ataque contra defesa</span><a class="anchor" href="#g-ataque-contra-defesa" aria-label="Link para esta seção">#</a></h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Ataque</th>
+<th>Parada do atacante</th>
+<th>Defesas possíveis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Desarmado</td>
+<td>Força + Briga</td>
+<td>Destreza + Briga, Armamento ou Atletismo</td>
+</tr>
+<tr>
+<td>Arma de uma mão</td>
+<td>Destreza + Armamento</td>
+<td>idem</td>
+</tr>
+<tr>
+<td>Arma de duas mãos</td>
+<td>Força + Armamento</td>
+<td>idem</td>
+</tr>
+<tr>
+<td><strong>Tiroteio</strong></td>
+<td>Autocontrole + Armas de Fogo</td>
+<td>Destreza + Atletismo</td>
+</tr>
+<tr>
+<td><strong>Tiro de precisão</strong></td>
+<td>Perseverança + Armas de Fogo</td>
+<td>idem</td>
+</tr>
+<tr>
+<td><strong>Saque, cara a cara</strong></td>
+<td>Destreza + Armas de Fogo</td>
+<td>idem</td>
+</tr>
+<tr>
+<td>Arremesso</td>
+<td>Destreza + Atletismo</td>
+<td>idem</td>
+</tr>
+<tr>
+<td>Agarrão</td>
+<td>Força + Briga</td>
+<td>Força + Briga</td>
+</tr>
+</tbody>
+</table></div>
+<p>Repare que <strong>a parada de disparo muda conforme a situação</strong>: atirar sob fogo cruzado, atirar de uma posição preparada e sacar antes do outro são três habilidades diferentes. Um personagem de Autocontrole 1 e Armas de Fogo 3 acerta 38% sob fogo e 62% de tocaia — mesma perícia, mesma arma.</p>
+<h3 id="g-aparar-ou-esquivar"><span>Aparar ou esquivar</span><a class="anchor" href="#g-aparar-ou-esquivar" aria-label="Link para esta seção">#</a></h3>
+<p>Esta é a escolha mais importante do combate:</p>
+<ul>
+<li><strong>Aparar</strong> com Briga ou Armamento: se você vencer, <strong>você também causa dano</strong>. A defesa vira contra-ataque na mesma rolagem.</li>
+<li><strong>Esquivar</strong> com Destreza + Atletismo: você <strong>não causa dano nenhum</strong>, por maior que seja a margem. Em compensação, funciona contra <strong>qualquer coisa</strong>.</li>
+</ul>
+<p>Aparar só compensa quando a sua parada de Briga ou Armamento empata com a de Atletismo <strong>e você está armado</strong>. Desarmado, o contra-ataque é superficial, divide por dois e quase nunca marca coisa alguma.</p>
+<h3 id="g-blindagem"><span>Blindagem</span><a class="anchor" href="#g-blindagem" aria-label="Link para esta seção">#</a></h3>
+<p><strong>A Blindagem subtrai direto do dano líquido</strong>, e o que ela cobre depende do tipo:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Tipo</th>
+<th>Reduz</th>
+<th>Onde importa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Leve</strong> — jaqueta reforçada, colete de rua</td>
+<td>Dano <strong>superficial</strong> apenas</td>
+<td>Briga, quedas, impacto. Contra arma de fogo, nada</td>
+</tr>
+<tr>
+<td><strong>Pesada</strong> — placas, chassi, exoesqueleto</td>
+<td>Superficial e <strong>agravado</strong> de fonte física</td>
+<td>Bala e lâmina</td>
+</tr>
+<tr>
+<td><strong>Magitek</strong></td>
+<td><strong>Qualquer</strong> dano, energia divina inclusive</td>
+<td>O único que protege do que importa no fim da crônica</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Um ataque que vence a defesa sempre causa ao menos 1 ponto</strong>, por maior que seja a Blindagem.</p>
+<p>Blindagem não tira dados de ninguém e não impede o acerto. Ela não faz você ser difícil de atingir: faz o que atinge você não te matar.</p>
+<h3 id="g-perfuração"><span>Perfuração</span><a class="anchor" href="#g-perfuração" aria-label="Link para esta seção">#</a></h3>
+<p>Uma arma com <strong>Perfuração N</strong> ignora N pontos de Blindagem. É assim que uma crônica continua tensa depois que o grupo se equipa.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Fonte</th>
+<th>Perfuração</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Munição perfurante comum</td>
+<td>1</td>
+</tr>
+<tr>
+<td>Rifle Magitek</td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>Pistola de desintegração Magitek</strong></td>
+<td>3, e destrói 1 ponto de Blindagem do alvo permanentemente até o conserto</td>
+</tr>
+<tr>
+<td>DOMAIN 3 ou acima</td>
+<td>Ignora Blindagem que não seja Magitek</td>
+</tr>
+<tr>
+<td>Energia divina, glyph de expurgo, toque de Youkai</td>
+<td>Ignora <strong>toda</strong> Blindagem</td>
+</tr>
+<tr>
+<td>Artefato verdadeiro</td>
+<td>O Narrador decide, e ninguém sabe de antemão</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="g-manobras"><span>Manobras</span><a class="anchor" href="#g-manobras" aria-label="Link para esta seção">#</a></h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Manobra</th>
+<th>Ganha</th>
+<th>Custa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Ataque total</strong></td>
+<td>+1 de dano</td>
+<td>Até o seu próximo turno, você rola <strong>1 dado a menos</strong> em qualquer defesa</td>
+</tr>
+<tr>
+<td><strong>Defesa total</strong></td>
+<td>+1 dado em todas as defesas</td>
+<td>Nenhuma outra ação</td>
+</tr>
+<tr>
+<td><strong>Mira</strong></td>
+<td>+1 dado por turno, até +3</td>
+<td>O turno inteiro</td>
+</tr>
+<tr>
+<td><strong>Alvo específico</strong></td>
+<td>Um efeito que não seja dano</td>
+<td>−2 sucessos</td>
+</tr>
+<tr>
+<td><strong>Surpresa</strong></td>
+<td>Ataque contra dificuldade 1, sem defesa, e <strong>dano dobrado</strong></td>
+<td>Um teste de Furtividade contra Percepção antes. Perdeu, não há surpresa</td>
+</tr>
+</tbody>
+</table></div>
+<p>A Surpresa é letal de propósito: um ataque de 6 dados com rifle causa em média 10,7 pontos, o que mata qualquer personagem comum e 70% dos mais resistentes do jogo. Vale a cena inteira gasta preparando — e vale o Narrador deixar claro quando são os jogadores que estão sendo emboscados.</p>
+<h3 id="g-ações-extras"><span>Ações extras</span><a class="anchor" href="#g-ações-extras" aria-label="Link para esta seção">#</a></h3>
+<p><strong>Toda ação além da primeira, num mesmo turno, custa 1 ponto superficial de Força de Vontade.</strong> Vale para SPEED 2 e 3, SYSTEM 2, a Vantagem Pistoleiro e a Ás do Volante.</p>
+<p>É o que mantém esses poderes no lugar: SPEED 3 com seis ataques causa quase 20 pontos num turno, mas consome 5 das 6 caixas de uma Força de Vontade típica — sobra uma, e nenhum outro poder sai pelo resto da cena.</p>
+<h3 id="g-vencer-sem-matar"><span>Vencer sem matar</span><a class="anchor" href="#g-vencer-sem-matar" aria-label="Link para esta seção">#</a></h3>
+<p>Num <strong>Lampejo</strong>, numa <strong>Sobrecarga</strong> ou num <strong>Despertar</strong> em combate, o vencedor pode abrir mão do dano e escolher um desfecho equivalente: desacordar, desarmar, imobilizar, empurrar para fora da cena. Contra figurante, acontece; contra personagem importante, o alvo resiste com uma parada apropriada.</p>
+<h3 id="g-o-que-o-narrador-precisa-saber-antes-do-primeiro-tiroteio"><span>O que o Narrador precisa saber antes do primeiro tiroteio</span><a class="anchor" href="#g-o-que-o-narrador-precisa-saber-antes-do-primeiro-tiroteio" aria-label="Link para esta seção">#</a></h3>
+<p><strong>Sobre atirar em alguém.</strong> Arma de fogo é resolução, não negociação. Um tiro certeiro médio causa cinco pontos, e um personagem comum tem cinco ou seis de Saúde — quem saca espera matar ou morrer na primeira troca. Combate desarmado é outra coisa: o dano é superficial, divide por dois, e uma briga leva turnos. Se a cena não deve terminar com alguém no chão, ela não é uma cena de tiroteio — e se alguém sacou, ela já é.</p>
+<h3 id="g-uma-cena-inteira-resolvida"><span>Uma cena inteira, resolvida</span><a class="anchor" href="#g-uma-cena-inteira-resolvida" aria-label="Link para esta seção">#</a></h3>
+<p><em>Bartlett (Punk, Destreza 3, Vigor 3, Autocontrole 3, Briga 2, Armas de Fogo 3, Atletismo 3, rifle +3, Kevlar-9 de Night City — blindagem pesada 2) e um miliciano de uma facção de Sovia entram numa troca de tiros num corredor. Ele tem parada 5 no ataque e 4 na defesa, blindagem pesada 1, e carrega uma pistola +3.</em></p>
+<p><strong>Turno 1.</strong> Bartlett atira. Parada: Autocontrole 3 + Armas de Fogo 3 = <strong>6 dados</strong>, sendo 3 de Tensão. Ele tira <code>10, 8, 6, 3, 1, 2</code>. O 10 explode e dá 5. Total: <strong>3 sucessos</strong>. O 1 caiu num dado de Tensão: <strong>Tensão</strong>.</p>
+<p>O miliciano esquiva com 4 dados e tira <strong>1 sucesso</strong>.</p>
+<ul>
+<li>Margem de Bartlett: 3 − 1 = <strong>2</strong>. Dano: 2 + 3 do rifle = <strong>5 pontos agravados</strong>.</li>
+<li>A blindagem pesada dele é 1: subtrai 1. Ficam <strong>4 agravados</strong>. Ele tem Saúde 6.</li>
+<li><strong>A Tensão de Bartlett:</strong> ele escolhe <strong>não</strong> gastar Força de Vontade, e o Narrador narra: <em>"o coice desalinhou a mira do rifle e a próxima janela de tiro fechou. Você perdeu a posição."</em></li>
+</ul>
+<p><strong>Turno 2.</strong> Muito ferido, o miliciano parte para cima dele para dar uma coronhada. Parada 5, tira <strong>2 sucessos</strong>.</p>
+<p>Bartlett decide <strong>aparar</strong> com Destreza 3 + Briga 2 = 5 dados, em vez de esquivar. Tira <code>9, 10, 10, 4, 6</code>. Os dois 10 explodem e dão 7 e 2. Total: <strong>5 sucessos</strong>, e <strong>dois dez em dados de Tensão</strong>.</p>
+<ul>
+<li>Bartlett vence: margem 5 − 2 = <strong>3</strong>. Desarmado, o dano seria 3 superficiais, divididos por dois: 1 ponto. Ele ficaria com 5 de 6 — de pé, por pouco.</li>
+<li><strong>Dois dez na Tensão = Sobrecarga.</strong> Bartlett usa o ganho para <strong>trocar o dano por um desfecho</strong>: encosta a arma dele na parede e o apaga. Ele sai da cena com 4 de 6, inconsciente.</li>
+<li>A Sobrecarga também devolveria 1 superficial de Força de Vontade, mas ele não tinha gasto nenhum.</li>
+</ul>
+<p><strong>Fim da cena.</strong> Bartlett sai com a Força de Vontade intacta e um prisioneiro para interrogar. Se ele tivesse esquivado no turno 2, não teria o ganho para gastar — e ele continuaria de pé, armado.</p>
+<h2 id="g-9-quirks-e-trilhas-de-poder"><span class="sec">SEC.09</span><span>Quirks e Trilhas de Poder</span><a class="anchor" href="#g-9-quirks-e-trilhas-de-poder" aria-label="Link para esta seção">#</a></h2>
+<p>Todo poder do jogo está organizado em <strong>Trilhas de cinco níveis</strong>. Comprar o nível 3 exige ter o 2, que exige ter o 1. Cada nível entrega um poder com nome próprio.</p>
+<p><strong>Não existe teste para ativar.</strong> Ativar um poder custa Força de Vontade, e ponto final.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Nível do poder</th>
+<th>Custo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Grátis — passivo ou trivial</td>
+</tr>
+<tr>
+<td>2 e 3</td>
+<td>1 ponto superficial de Força de Vontade</td>
+</tr>
+<tr>
+<td>4</td>
+<td>2 pontos superficiais</td>
+</tr>
+<tr>
+<td>5</td>
+<td>1 ponto <strong>agravado</strong> — e uma vez por cena</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p>Se a sua trilha de Força de Vontade estiver cheia de dano, <strong>você não ativa nada</strong>.</p>
+</blockquote>
+<h3 id="g-a-sua-quirk"><span>A sua Quirk</span><a class="anchor" href="#g-a-sua-quirk" aria-label="Link para esta seção">#</a></h3>
+<p>Punks, Cyberpunks, Nefilins e Han'you têm uma Quirk — um poder mutante único. <strong>Não existe lista fechada.</strong> Cada Quirk é uma Trilha própria, criada por você junto com o Narrador. Existe um molde:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Nível</th>
+<th>O que o poder deve fazer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>O efeito básico. Passivo, sempre ligado, pequeno</td>
+</tr>
+<tr>
+<td>2</td>
+<td>A primeira aplicação ativa. Alcance ou duração curtos</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>O efeito assinatura.</strong> É o que a Quirk <em>é</em></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Escala: mais alvos, mais alcance, ou quebra uma limitação do nível 3</td>
+</tr>
+<tr>
+<td>5</td>
+<td>O limite. Uma vez por cena. Deixa marca</td>
+</tr>
+</tbody>
+</table></div>
+<p>Os nomes ficam em inglês porque é a língua comum de PlanetHell.</p>
+<h3 id="g-exemplo-trabalhado-speed"><span>Exemplo trabalhado — SPEED</span><a class="anchor" href="#g-exemplo-trabalhado-speed" aria-label="Link para esta seção">#</a></h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Nv</th>
+<th>Poder</th>
+<th>Efeito</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Fast Perception</td>
+<td>+2 em Iniciativa e em qualquer teste de reação. Passivo</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Overdrive</td>
+<td>Deslocamento ×5 por uma cena. Uma ação extra por turno, desde que não seja disparar</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Speed of Light</td>
+<td>Até seis ações de ataque num turno. Você rola 1 dado a menos em qualquer defesa neste turno</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Wind Pressure</td>
+<td>Punhos em hipervelocidade geram correntes de ar. Dobra a Destreza por uma cena</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Atomic Collision</td>
+<td>Lança-se numa direção. Dobro do dano, alcance triplo do sprint. Fica Debilitado por quatro turnos, aconteça o que acontecer</td>
+</tr>
+</tbody>
+</table></div>
+<p>Lembre da regra de ações extras da seção 8: cada ação além da primeira custa 1 superficial. Speed of Light com seis ataques custa 5 pontos.</p>
+<h3 id="g-o-catálogo-vinte-quirks-nos-cinco-níveis"><span>O catálogo — vinte Quirks nos cinco níveis</span><a class="anchor" href="#g-o-catálogo-vinte-quirks-nos-cinco-níveis" aria-label="Link para esta seção">#</a></h3>
+<h4 id="g-ataque-você-resolve-machucando"><span>Ataque — você resolve machucando</span><a class="anchor" href="#g-ataque-você-resolve-machucando" aria-label="Link para esta seção">#</a></h4>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Quirk</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>PYROKINESIS</strong></td>
+<td>Imune a fogo. Acende chamas com a mão</td>
+<td>Golfada de fogo a curta distância, com Destreza + Atletismo</td>
+<td>Envolve o corpo em fogo. Quem encostar se queima</td>
+<td>O fogo não precisa de contato: cobre uma sala por uma cena</td>
+<td>Coluna de fogo num raio de 30 m, margem +5. O lugar queima até o fim da sessão</td>
+</tr>
+<tr>
+<td><strong>RAILGUN</strong></td>
+<td>Magnetiza pequenos objetos</td>
+<td>Puxa ou repele um objeto metálico solto a um braço de distância</td>
+<td>Arremessa qualquer coisa metálica na velocidade de uma bala</td>
+<td>Perfuração 3 e dois alvos na mesma ação</td>
+<td>Acelera uma massa grande. Dano dobrado, Perfuração 5, Debilitado 2 turnos</td>
+</tr>
+<tr>
+<td><strong>VENOM</strong></td>
+<td>Unhas e dentes carregam toxina leve</td>
+<td>Concentra a toxina numa dose. O alvo resiste com Vigor + Perseverança ou perde 1 dado por turno</td>
+<td>Um ferimento seu não para de piorar até alguém tratar</td>
+<td>A toxina fica contagiosa por contato</td>
+<td>Uma dose que mata. O alvo tem uma cena para achar tratamento</td>
+</tr>
+<tr>
+<td><strong>QUAKE</strong></td>
+<td>Sente vibrações no chão a cem metros</td>
+<td>Pancada no chão: fenda curta ou derruba um alvo adjacente</td>
+<td>Um golpe no solo derruba todo mundo em volta</td>
+<td>Você escolhe quem cai. A onda atravessa paredes e sobe estruturas</td>
+<td>Derruba a estrutura. Todos dentro sofrem margem +4, você inclusive</td>
+</tr>
+<tr>
+<td><strong>SEVER</strong></td>
+<td>Corta coisas finas sem tocá-las</td>
+<td>Corta à distância o que caberia numa tesoura</td>
+<td>Um gesto e alguma coisa do adversário se separa dele</td>
+<td>Corta o que não é físico: conexão Magitek, vínculo, glyph</td>
+<td>Um corte que não erra. Fica visível em você: uma linha que não fecha</td>
+</tr>
+</tbody>
+</table></div>
+<h4 id="g-defesa-você-resolve-continuando-de-pé"><span>Defesa — você resolve continuando de pé</span><a class="anchor" href="#g-defesa-você-resolve-continuando-de-pé" aria-label="Link para esta seção">#</a></h4>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Quirk</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CARAPACE</strong></td>
+<td>A pele endurece sozinha nos pontos atingidos</td>
+<td>Endurece uma parte à vontade: Blindagem 2 contra um ataque declarado</td>
+<td>Blindagem que cobre o corpo inteiro por uma cena</td>
+<td>Blindagem +2 sobre o nível 3, e não precisa respirar</td>
+<td>Casulo: imune a dano por um turno. Não pode agir nem ver</td>
+</tr>
+<tr>
+<td><strong>BLINK</strong></td>
+<td>Pisca alguns metros, uma vez por turno</td>
+<td>Leva o que estiver nas mãos, e pode piscar como reação</td>
+<td>Teleporta para qualquer lugar que enxergue</td>
+<td>Leva outra pessoa, ou troca de lugar com quem enxergar</td>
+<td>Pisca para um lugar que conhece sem ver, no alcance de uma cidade. Debilitado 1 turno</td>
+</tr>
+<tr>
+<td><strong>REWIND</strong></td>
+<td>Sabe onde estava três segundos atrás</td>
+<td>Desfaz a sua última ação falha e rerrola a parada inteira</td>
+<td>Desfaz o seu último turno e o joga de novo</td>
+<td>Desfaz o turno de outra pessoa</td>
+<td>Desfaz a cena. Só você lembra, e lembrar custa 1 agravado e uma Consequência</td>
+</tr>
+<tr>
+<td><strong>PHASE</strong></td>
+<td>Atravessa objetos finos</td>
+<td>Atravessa uma parede ou piso inteiro, uma vez</td>
+<td>Fica intangível: nada encosta em você por um turno</td>
+<td>Leva outra pessoa junto</td>
+<td>Intangível por uma cena. Não toca nada, o chão inclusive, e sai com 1 agravado</td>
+</tr>
+<tr>
+<td><strong>STILL</strong></td>
+<td>Quem você toca não sente dor</td>
+<td>O toque estanca: estabiliza um agravado, tira do choque</td>
+<td>Absorve o ferimento de outra pessoa para si</td>
+<td>Absorve à distância, e divide o ferimento entre voluntários</td>
+<td>Absorve tudo de todos na cena. Você marca a soma inteira, e ela <strong>não</strong> divide por dois</td>
+</tr>
+</tbody>
+</table></div>
+<h4 id="g-buff-e-debuff-você-resolve-mudando-o-que-os-outros-conseguem-fazer"><span>Buff e debuff — você resolve mudando o que os outros conseguem fazer</span><a class="anchor" href="#g-buff-e-debuff-você-resolve-mudando-o-que-os-outros-conseguem-fazer" aria-label="Link para esta seção">#</a></h4>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Quirk</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>BEACON</strong></td>
+<td>Aliados que enxergam você não se perdem</td>
+<td>Marca um alvo: aliados que virem a marca ganham +1 dado contra ele</td>
+<td>Todos os aliados na cena ganham dados na próxima rolagem</td>
+<td>A marca atravessa parede e escuridão</td>
+<td>Todos os aliados recuperam 1 superficial de FV e agem como se não estivessem Debilitados</td>
+</tr>
+<tr>
+<td><strong>LEECH</strong></td>
+<td>Sente quando alguém está no limite</td>
+<td>Rouba 1 ponto de um Atributo por um turno, ao toque</td>
+<td>Rouba um Atributo de um alvo e usa como seu por uma cena</td>
+<td>Rouba de dois alvos, ou rouba uma Perícia</td>
+<td>Rouba tudo de um alvo por uma cena. Ao fim, ele sabe o que você é</td>
+</tr>
+<tr>
+<td><strong>GRAVITY</strong></td>
+<td>Você fica mais leve ou mais pesado</td>
+<td>Muda o peso de um objeto que tocar</td>
+<td>Prende um alvo no chão, ou o arremessa contra o teto</td>
+<td>Uma área inteira cai, flutua ou desacelera por uma cena</td>
+<td>Inverte a gravidade de um quarteirão por um turno</td>
+</tr>
+<tr>
+<td><strong>HUSH</strong></td>
+<td>Você abafa o som ao seu redor</td>
+<td>Silencia uma pessoa ou um objeto no alcance da visão</td>
+<td>Ninguém na cena consegue falar, gritar ou dar ordens</td>
+<td>Silencia o que é transmitido: rádio, Magitek, telepatia</td>
+<td>Silêncio absoluto por uma cena. Nenhum poder que dependa de voz funciona, o seu inclusive</td>
+</tr>
+<tr>
+<td><strong>MIRROR</strong></td>
+<td>Copia um gesto com perfeição</td>
+<td>Copia uma Perícia de quem viu usar, no valor dela, por uma cena</td>
+<td>Copia uma Quirk que viu funcionar, por uma cena</td>
+<td>Copia duas coisas, ou mantém a cópia entre cenas</td>
+<td>Copia a pessoa inteira por uma cena. Ao fim, role para lembrar quem você é</td>
+</tr>
+</tbody>
+</table></div>
+<h4 id="g-tática-você-resolve-chegando-antes"><span>Tática — você resolve chegando antes</span><a class="anchor" href="#g-tática-você-resolve-chegando-antes" aria-label="Link para esta seção">#</a></h4>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Quirk</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>THREAD</strong></td>
+<td>Você sabe se alguém está mentindo</td>
+<td>Lê a intenção imediata de uma pessoa</td>
+<td>Vê o que a pessoa vai fazer um instante antes dela fazer</td>
+<td>Lê todos na cena, e você não pode ser surpreendido</td>
+<td>Vê a próxima hora de uma pessoa. Aquilo acontece a menos que alguém mude</td>
+</tr>
+<tr>
+<td><strong>SPLIT</strong></td>
+<td>Projeta uma imagem sua, parada</td>
+<td>A imagem se move e repete o que você faz, atrasada</td>
+<td>Cria cópias suas que agem e enganam</td>
+<td>As cópias agem sozinhas com metade da sua parada</td>
+<td>Uma cópia que <strong>é</strong> você por uma cena. Você não sabe qual das duas voltou</td>
+</tr>
+<tr>
+<td><strong>CIPHER</strong></td>
+<td>Lê qualquer escrita, a divina inclusive</td>
+<td>Lê o que um sistema processa agora, sem se conectar</td>
+<td>Conversa com máquinas e sistemas sem equipamento</td>
+<td>Dá ordens a sistemas alheios sem alertar quem os opera</td>
+<td>Fala com um sistema Magitek antigo, e ele responde. Ele passa a saber o seu nome</td>
+</tr>
+<tr>
+<td><strong>SCENT</strong></td>
+<td>Reconhece qualquer pessoa pelo cheiro</td>
+<td>Sente o estado de quem está perto: medo, mentira, doença</td>
+<td>Rastreia alguém por uma cidade inteira, dias depois</td>
+<td>Rastreia pelo que a pessoa tocou, com semanas de atraso</td>
+<td>Segue um cheiro a qualquer distância enquanto a pessoa viver. E você sabe quando ela morre</td>
+</tr>
+<tr>
+<td><strong>LOOP</strong></td>
+<td>Acorda sempre à mesma hora, sem relógio</td>
+<td>Uma vez por cena, sabe se a ação vai dar errado — sem saber por quê</td>
+<td>Vive a cena, morre, e volta ao começo dela sabendo o que veio</td>
+<td>Volta sem precisar morrer: escolhe o ponto de retorno</td>
+<td>Volta ao começo da <strong>sessão</strong>. Uma vez por crônica, e o Narrador muda uma coisa que você não previu</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="g-como-escolher"><span>Como escolher</span><a class="anchor" href="#g-como-escolher" aria-label="Link para esta seção">#</a></h3>
+<p>Se você está indeciso, pergunte: <strong>como o seu personagem resolve problemas quando tudo dá errado?</strong></p>
+<ul>
+<li>Machucando alguém → Ataque</li>
+<li>Aguentando o tranco → Defesa</li>
+<li>Mudando as regras da cena → Buff e debuff</li>
+<li>Sabendo antes → Tática</li>
+</ul>
+<p>E lembre: a Quirk não precisa ser útil em combate. <strong>STILL</strong> não machuca ninguém, e é a coisa mais definidora da personagem que a carrega.</p>
+<h3 id="g-trilhas-genéricas"><span>Trilhas genéricas</span><a class="anchor" href="#g-trilhas-genéricas" aria-label="Link para esta seção">#</a></h3>
+<p>Além da Quirk, cada raça tem acesso a três <strong>Trilhas afins</strong>, que custam mais barato. São dezessete genéricas, listadas no Anexo C, mais a Quirk.</p>
+<h3 id="g-magitek"><span>Magitek</span><a class="anchor" href="#g-magitek" aria-label="Link para esta seção">#</a></h3>
+<p>Não é magia e não é tecnologia. É um terceiro tipo de coisa, trazida pelos Anunnakis e pelos Others, e <strong>está em toda parte</strong>. Magitek move veículos, aquece casas, purifica água e sustenta metade dos implantes que os Cyberpunks carregam. Não é relíquia: é infraestrutura.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Onde</th>
+<th>O que Magitek significa ali</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Romania e Meca</strong></td>
+<td>Dádiva divina. Usar é ato de fé, e manter um dispositivo é quase um sacramento. Quem fabrica ou repara tem posição religiosa</td>
+</tr>
+<tr>
+<td><strong>Babylon</strong></td>
+<td>Mercadoria. A cidade é o maior centro de comércio e adaptação Magitek do planeta</td>
+</tr>
+<tr>
+<td><strong>Eden</strong></td>
+<td>Ciência aplicada. Os Others que vivem ali entendem melhor do que qualquer humano</td>
+</tr>
+<tr>
+<td><strong>Sovia</strong></td>
+<td>Espólio de guerra. Funciona remendado até parar, e aí se remenda de novo</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Quase todo Improvement de Cyberpunk é Magitek.</strong> E quem tem a perícia adequada faz a própria manutenção — Ofícios cobre isso.</p>
+<p>O que continua raro é <strong>fabricar do zero</strong>. Ninguém neste planeta sabe produzir Magitek com facilidade; só adaptar, remendar e reaproveitar. E há os <strong>artefatos verdadeiros</strong>: objetos antigos, sem manual e sem função identificável. Alguns são comunicadores. Alguns são armas. Alguns ficam quentes perto de determinados lugares, e ninguém sabe por quê.</p>
+<h2 id="g-10-criando-o-seu-personagem"><span class="sec">SEC.10</span><span>Criando o seu personagem</span><a class="anchor" href="#g-10-criando-o-seu-personagem" aria-label="Link para esta seção">#</a></h2>
+<figure class="fig hud"><img src="img/multidao.webp" style="object-position:50% 40%" alt="Multidão de raças misturadas numa rua de neon, sob a chuva." loading="lazy"><figcaption><b>Night City</b> — onze raças na mesma calçada</figcaption></figure>
+
+<p>Dez passos. Vou montar um personagem junto com você, do zero, para você ver cada decisão acontecendo.</p>
+<h3 id="g-passo-1-conceito-em-duas-palavras"><span>Passo 1 — Conceito em duas palavras</span><a class="anchor" href="#g-passo-1-conceito-em-duas-palavras" aria-label="Link para esta seção">#</a></h3>
+<p>Se não couber em duas palavras, ainda não está pronto. <em>Cientista solitário. Ex-boxeador arrependido. Ladra sedutora. Contrabandista devoto.</em></p>
+<blockquote>
+<p><strong>Exemplo:</strong> "Médica desertora".</p>
+</blockquote>
+<h3 id="g-passo-2-raça"><span>Passo 2 — Raça</span><a class="anchor" href="#g-passo-2-raça" aria-label="Link para esta seção">#</a></h3>
+<p>Anote o Tamanho, as três Trilhas afins, a Falha racial, a Compulsão e a Vantagem racial (seção 3).</p>
+<blockquote>
+<p><strong>Exemplo:</strong> Cyberpunk, raça-base Human. Tamanho 3. Ela perdeu o braço esquerdo num bombardeio e trocou por um mecânico. Como Cyberpunk, ela carrega a Falha <em>Maintenance</em> e a Compulsão <em>Optimization</em>, e o <em>Trick or Treat</em> <strong>acrescenta</strong> a Falha <em>Prey</em> e a Compulsão <em>Survival</em> da raça-base. Ser humana é o segredo mais perigoso dela — e custa caro carregar duas Falhas.</p>
+</blockquote>
+<h3 id="g-passo-3-atributos"><span>Passo 3 — Atributos</span><a class="anchor" href="#g-passo-3-atributos" aria-label="Link para esta seção">#</a></h3>
+<p>São nove, em três grupos de três:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Poder</strong></th>
+<th><strong>Finesse</strong></th>
+<th><strong>Resistência</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Físico</strong></td>
+<td>Força</td>
+<td>Destreza</td>
+<td>Vigor</td>
+</tr>
+<tr>
+<td><strong>Social</strong></td>
+<td>Presença</td>
+<td>Manipulação</td>
+<td>Autocontrole</td>
+</tr>
+<tr>
+<td><strong>Mental</strong></td>
+<td>Inteligência</td>
+<td>Raciocínio</td>
+<td>Perseverança</td>
+</tr>
+</tbody>
+</table></div>
+<p>Distribua: um em <strong>4</strong>, três em <strong>3</strong>, quatro em <strong>2</strong>, um em <strong>1</strong>.</p>
+<blockquote>
+<p><strong>Exemplo:</strong> Inteligência 4. Destreza 3, Autocontrole 3, Perseverança 3. Força 2, Vigor 2, Raciocínio 2, Manipulação 2. Presença 1.</p>
+<p>Autocontrole 3 significa <strong>3 dados de Tensão em toda rolagem</strong>. Ela é contida, e vai quebrar feio quando descontrolar.</p>
+</blockquote>
+<h3 id="g-passo-4-perícias"><span>Passo 4 — Perícias</span><a class="anchor" href="#g-passo-4-perícias" aria-label="Link para esta seção">#</a></h3>
+<p>São vinte e sete:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th><strong>Físicas</strong></th>
+<th><strong>Sociais</strong></th>
+<th><strong>Mentais</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Armamento</td>
+<td>Astúcia</td>
+<td>Ciências</td>
+</tr>
+<tr>
+<td>Armas de Fogo</td>
+<td>Empatia</td>
+<td>Erudição</td>
+</tr>
+<tr>
+<td>Atletismo</td>
+<td>Etiqueta</td>
+<td>Finanças</td>
+</tr>
+<tr>
+<td>Briga</td>
+<td>Expressão</td>
+<td>Informática</td>
+</tr>
+<tr>
+<td>Condução</td>
+<td>Intimidação</td>
+<td>Investigação</td>
+</tr>
+<tr>
+<td>Furtividade</td>
+<td>Liderança</td>
+<td>Medicina</td>
+</tr>
+<tr>
+<td>Larcínio</td>
+<td>Manha</td>
+<td>Ocultismo</td>
+</tr>
+<tr>
+<td>Ofícios</td>
+<td>Persuasão</td>
+<td>Política</td>
+</tr>
+<tr>
+<td>Sobrevivência</td>
+<td>Trato com Animais</td>
+<td>Percepção</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p><strong>Adaptações de PlanetHell:</strong> <em>Informática</em> cobre hacking, IAs e sistemas Magitek. <em>Ocultismo</em> cobre teologia Anunnaki, glyphs e rituais. <em>Ciências</em> cobre engenharia genética, robótica e Biotec. <em>Ofícios</em> cobre implantes, manutenção de Mechas e improvisação de campo.</p>
+</blockquote>
+<p>Escolha um perfil de distribuição. Todos valem 26 pontos; o que muda é a forma.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Perfil</th>
+<th>Distribuição</th>
+<th>Perícias</th>
+<th>Pico</th>
+<th>Serve para</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Faz-tudo</strong></td>
+<td>2 pontos em dez perícias, 1 ponto em seis</td>
+<td>16</td>
+<td>2</td>
+<td>Sobreviventes e veteranos: cobre quase tudo, não é bom em nada</td>
+</tr>
+<tr>
+<td><strong>Equilibrado</strong></td>
+<td>3 pontos em três perícias, 2 em cinco, 1 em sete</td>
+<td>15</td>
+<td>3</td>
+<td>Profissionais com uma vida antes desta</td>
+</tr>
+<tr>
+<td><strong>Especialista</strong></td>
+<td>4 pontos em uma perícia, 3 em quatro, 2 em três, 1 em quatro</td>
+<td>12</td>
+<td>4</td>
+<td>Quem só sabe uma coisa e sabe muito</td>
+</tr>
+</tbody>
+</table></div>
+<p>Amplitude custa profundidade: o Faz-tudo se vira em quase tudo, mas nunca é excelente; o Especialista é o melhor da mesa naquilo que é dele — e se perde fora disso.</p>
+<blockquote>
+<p><strong>Exemplo:</strong> Especialista. Medicina 4. Ciências 3, Percepção 3, Empatia 3, Investigação 3. Furtividade 2, Condução 2, Astúcia 2. Armas de Fogo 1, Atletismo 1, Ofícios 1, Erudição 1.</p>
+</blockquote>
+<h3 id="g-passo-5-especializações"><span>Passo 5 — Especializações</span><a class="anchor" href="#g-passo-5-especializações" aria-label="Link para esta seção">#</a></h3>
+<p>Uma gratuita em Ciências, Ofícios, Erudição e Informática, se tiver pontos nelas, mais uma livre. Cada uma dá <strong>+1 dado</strong> na aplicação específica.</p>
+<blockquote>
+<p><strong>Exemplo:</strong> Nadia tem pontos em Ciências, Ofícios e Erudição, então ganha uma especialização gratuita em cada uma — Ciências (Farmacologia), Ofícios (Implantes: ela mesma faz a manutenção do braço), Erudição (Anatomia das raças) — e usa a livre em Medicina (Trauma de combate).</p>
+</blockquote>
+<h3 id="g-passo-6-trilhas-de-poder"><span>Passo 6 — Trilhas de Poder</span><a class="anchor" href="#g-passo-6-trilhas-de-poder" aria-label="Link para esta seção">#</a></h3>
+<p><strong>Dois pontos</strong> numa Trilha afim e <strong>um ponto</strong> em outra afim. Se você tem Quirk, construa com o Narrador usando o molde de cinco níveis.</p>
+<blockquote>
+<p><strong>Exemplo:</strong> Improvement 2 — o braço mecânico. Nível 1: +1 dado em Medicina pela precisão. Nível 2: instrumentos embutidos, não precisa de maleta.</p>
+<p>Quirk 1 — <strong>STILL</strong>. Nível 1: enquanto ela tocar uma pessoa, essa pessoa não sente dor. É pequeno, é passivo, e diz tudo sobre quem ela é.</p>
+</blockquote>
+<h3 id="g-passo-7-vantagens-e-defeitos"><span>Passo 7 — Vantagens e Defeitos</span><a class="anchor" href="#g-passo-7-vantagens-e-defeitos" aria-label="Link para esta seção">#</a></h3>
+<p><strong>Sete pontos</strong> de Vantagens, <strong>dois</strong> de Defeitos (Anexos A e B).</p>
+<blockquote>
+<p><strong>Exemplo:</strong> Recursos 1, Contatos 2 (mercado negro de fármacos), Refúgio 2 (clínica clandestina com enfermaria), Aliado 2 (um enfermeiro que a esconde).</p>
+<p>Defeitos: Registro Militar 1 (consta como desertora em Meca) e Segredo 1 (ela era humana e perseguida em Meca).</p>
+</blockquote>
+<h3 id="g-passo-8-derivados"><span>Passo 8 — Derivados</span><a class="anchor" href="#g-passo-8-derivados" aria-label="Link para esta seção">#</a></h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Cálculo</th>
+<th>Fórmula</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Saúde</strong></td>
+<td>Vigor + Tamanho</td>
+</tr>
+<tr>
+<td><strong>Força de Vontade</strong></td>
+<td>Autocontrole + Perseverança</td>
+</tr>
+<tr>
+<td><strong>Dados de Tensão</strong></td>
+<td>= Autocontrole</td>
+</tr>
+<tr>
+<td><strong>Iniciativa</strong></td>
+<td>Destreza + Autocontrole, +1d10 na hora</td>
+</tr>
+<tr>
+<td><strong>Deslocamento</strong></td>
+<td>Força + Destreza + 5 metros por rodada</td>
+</tr>
+<tr>
+<td><strong>Moralidade</strong></td>
+<td>7</td>
+</tr>
+<tr>
+<td><strong>Despertar</strong></td>
+<td>0</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p><strong>Exemplo:</strong> Saúde 2 + 3 = <strong>5</strong>. Força de Vontade 3 + 3 = <strong>6</strong>. Tensão <strong>3</strong>. Iniciativa 3 + 3 = <strong>6</strong>. Deslocamento 2 + 3 + 5 = <strong>10 m</strong>. Moralidade 7. Despertar 0.</p>
+</blockquote>
+<h3 id="g-passo-9-convicções-e-âncoras"><span>Passo 9 — Convicções e Âncoras</span><a class="anchor" href="#g-passo-9-convicções-e-âncoras" aria-label="Link para esta seção">#</a></h3>
+<p>De uma a três, cada uma com uma pessoa viva e concreta.</p>
+<blockquote>
+<p><strong>Exemplo:</strong> <em>"Eu não pergunto de que lado a pessoa está antes de operar."</em> Âncora: <strong>Sami</strong>, o enfermeiro que a escondeu na primeira noite.</p>
+</blockquote>
+<h3 id="g-passo-10-ambição-e-desejo"><span>Passo 10 — Ambição e Desejo</span><a class="anchor" href="#g-passo-10-ambição-e-desejo" aria-label="Link para esta seção">#</a></h3>
+<blockquote>
+<p><strong>Exemplo:</strong> Ambição — <em>sair do registro de desertores sem entregar ninguém</em>. Desejo da primeira sessão — <em>conseguir um lote de antibióticos sem dever favor a ninguém</em>.</p>
+</blockquote>
+<h3 id="g-a-ficha-pronta"><span>A ficha pronta</span><a class="anchor" href="#g-a-ficha-pronta" aria-label="Link para esta seção">#</a></h3>
+<p><strong>Nadia Corvo</strong>, médica desertora. Cyberpunk de base humana, 34 anos, Tamanho 3.</p>
+<p>Inteligência 4, Medicina 4 — em qualquer coisa que envolva manter alguém vivo, ela rola <strong>8 dados</strong>, dos quais 3 são de Tensão. É muito bom, e é perigoso: três dados de Tensão significam 26% de chance de complicação e 3% de Colapso em cada procedimento.</p>
+<p>E quando ela Colapsar, a Falha que dispara é <em>Prey</em> ou <em>Manutenção</em>; quando ela quebrar de vez, a Compulsão é <em>Survival</em>: ela vai garantir uma saída antes de fazer qualquer outra coisa — inclusive antes de terminar a cirurgia.</p>
+<h3 id="g-patamares-iniciais"><span>Patamares iniciais</span><a class="anchor" href="#g-patamares-iniciais" aria-label="Link para esta seção">#</a></h3>
+<p>Seu Narrador dirá qual usar:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Patamar</th>
+<th>XP inicial</th>
+<th>Quem</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Iniciante</td>
+<td>0</td>
+<td>Gente comum, recrutas</td>
+</tr>
+<tr>
+<td><strong>Experiente</strong></td>
+<td>35</td>
+<td>Operadores, agentes de campo — o padrão</td>
+</tr>
+<tr>
+<td>Especialista</td>
+<td>75</td>
+<td>Uma célula veterana</td>
+</tr>
+<tr>
+<td>Heroico</td>
+<td>100</td>
+<td>Quem já enfrentou coisa divina e voltou</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="g-11-a-ficha-digital"><span class="sec">SEC.11</span><span>A ficha digital</span><a class="anchor" href="#g-11-a-ficha-digital" aria-label="Link para esta seção">#</a></h2>
+<p class="cta-row" style="margin:6px 0 18px"><a class="btn" href="ficha/">Abrir a ficha</a></p>
+
+<p>A ficha fica no site do jogo e abre no computador ou no celular. Você entra com um <strong>usuário</strong> e um <strong>PIN de 4 dígitos</strong> — sem e-mail, sem cadastro — e ela salva sozinha enquanto você joga.</p>
+<p><strong>Primeira vez.</strong> Em <em>Nova ficha</em>, escolha um usuário e diga só o seu primeiro nome. O sistema mostra o seu PIN uma vez: anote. Esqueceu? Em <em>Esqueci o PIN</em>, informe o nome do personagem e a raça, e o PIN aparece na tela. A ficha nasce em branco.</p>
+<p><strong>O que ela calcula sozinha.</strong> Mexeu numa bolinha, os derivados se ajustam na hora: Saúde, Força de Vontade, Dados de Tensão, Iniciativa, Deslocamento e Blindagem — já contando Vantagens, Defeitos e Trilhas que mexem neles, como Gigante, Frágil, Ligeiro, Grit e Bulwark. As trilhas de dano se redesenham junto, com o número certo de caixas.</p>
+<p><strong>Como marcar dano.</strong> Cada caixa cicla com um toque: <strong>vazia → <code>/</code> superficial (âmbar) → <code>X</code> agravado (vermelho) → vazia</strong>. Abaixo de cada trilha há uma linha que avisa sozinha quando você fica Debilitado — e na Força de Vontade ela diz o que mais importa na mesa: <strong>trilha cheia significa que nenhum poder pode ser ativado</strong>.</p>
+<p><strong>O menu de raça.</strong> Escolher a raça no topo abre um painel com a Vantagem racial, a Falha e a Compulsão daquela raça, preenche os campos correspondentes e <strong>fixa o Tamanho</strong> — que agora é determinístico para as onze raças, sem segunda pergunta. Se você escolher Cyberpunk, aparece um segundo menu para a raça-base, porque o <em>Trick or Treat</em> <strong>acrescenta</strong> a Falha e a Compulsão dela às suas.</p>
+<p><strong>Os blocos que crescem.</strong> Especializações, Trilhas, Vantagens, Defeitos, Convicções e Equipamento têm botão de adicionar e de remover linha. Vantagens e Defeitos dos Anexos aparecem com custo e efeito; os de outros sistemas também entram, com o valor combinado com o Narrador. Escolher uma Trilha mostra os cinco níveis dela, e uma Quirk do catálogo já vem com os níveis preenchidos.</p>
+<p><strong>A verificação.</strong> Ao lado da ficha, uma lista confere cada passo da criação contra este guia: distribuição de Atributos, perfil de Perícias, especializações gratuitas, Trilhas afins, pontos de Vantagem e Defeito, Convicções com Âncora. Quando a criação terminar, mude para <em>Em jogo</em> e compre evoluções com experiência pela própria ficha — ela calcula o custo.</p>
+<p><strong>O rolador.</strong> É a parte mais útil da ficha. Escolha a categoria (Ataque, Defesa, Perícia, Social, Especial) e o tipo de rolagem, e ele:</p>
+<ol>
+<li><strong>Preenche a parada sozinho</strong>, mostrando a fórmula — <em>"Autocontrole 3 + Armas de Fogo 3 = 6 dados"</em></li>
+<li>Marca os dados de Tensão com borda tracejada e as explosões com dados menores, lembrando que <strong>a explosão de um dado de Tensão continua sendo de Tensão</strong></li>
+<li>Aplica a escada de sete degraus e nomeia o resultado: Contratempo, Tensão, Colapso, Compulsão, Lampejo, Sobrecarga ou Despertar</li>
+<li>Calcula a margem contra a dificuldade e já informa o dano, subtraindo Blindagem e aplicando Perfuração e o piso de 1 ponto</li>
+<li><strong>Diz o que aconteceu na cena</strong> conforme o tipo de rolagem</li>
+</ol>
+<p>São trinta tipos, e cada um tem texto próprio para Despertar, Colapso e Fracasso Total. Um Despertar numa esquiva não significa a mesma coisa que num tiroteio, e o rolador sabe disso.</p>
+<p><strong>Versões e cópias.</strong> Nada é apagado: a cada 5 minutos de edição, e sempre que você clica em <em>Salvar</em>, uma cópia inteira vai para o histórico, e dá para voltar a qualquer uma. A ficha também baixa como <strong>planilha</strong> (abre no Excel e no Google Sheets) e como <strong>PDF</strong> para imprimir.</p>
+<h2 id="g-12-cinco-erros-comuns"><span class="sec">SEC.12</span><span>Cinco erros comuns</span><a class="anchor" href="#g-12-cinco-erros-comuns" aria-label="Link para esta seção">#</a></h2>
+<h3 id="g-1-achar-que-dificuldade-é-o-número-no-dado"><span>1. Achar que dificuldade é o número no dado</span><a class="anchor" href="#g-1-achar-que-dificuldade-é-o-número-no-dado" aria-label="Link para esta seção">#</a></h3>
+<p>Não é. <strong>Dificuldade é quantos sucessos você precisa juntar.</strong> Dificuldade 3 não significa "tire 3 ou mais": significa "junte três dados que tenham dado 6 ou mais".</p>
+<h3 id="g-2-comprar-autocontrole-alto-achando-que-é-só-defesa"><span>2. Comprar Autocontrole alto achando que é só defesa</span><a class="anchor" href="#g-2-comprar-autocontrole-alto-achando-que-é-só-defesa" aria-label="Link para esta seção">#</a></h3>
+<p>Autocontrole entra na Força de Vontade e na Iniciativa, o que é bom. Mas ele <strong>também define quantos dados de Tensão você rola em toda rolagem, para sempre</strong>.</p>
+<h3 id="g-3-esquecer-que-as-falhas-contam-mesmo-quando-você-vence"><span>3. Esquecer que as falhas contam mesmo quando você vence</span><a class="anchor" href="#g-3-esquecer-que-as-falhas-contam-mesmo-quando-você-vence" aria-label="Link para esta seção">#</a></h3>
+<p>Os uns nos dados de Tensão contam <strong>sempre</strong>. Você pode acertar o tiro, derrubar o inimigo, salvar o refém — e ainda enfrentar uma complicação séria, com a escolha de engoli-la ou gastar Força de Vontade para abafá-la.</p>
+<p>É isso que dá o tom do jogo: <strong>você consegue o que queria, e alguém paga.</strong></p>
+<h3 id="g-4-esquivar-quando-devia-aparar-ou-o-contrário"><span>4. Esquivar quando devia aparar — ou o contrário</span><a class="anchor" href="#g-4-esquivar-quando-devia-aparar-ou-o-contrário" aria-label="Link para esta seção">#</a></h3>
+<p>Aparar com Briga ou Armamento devolve dano na mesma rolagem, e <strong>armado é a única defesa do jogo que sai no lucro</strong>: você recebe menos do que devolve.</p>
+<p>Mas só vale quando a sua parada de Briga ou Armamento empata com a de Atletismo <strong>e você está armado</strong>. Desarmado, o contra-ataque é superficial, divide por dois e quase nunca marca coisa alguma — aí esquivar é melhor, porque funciona contra tudo.</p>
+<h3 id="g-5-deixar-a-força-de-vontade-chegar-ao-fim"><span>5. Deixar a Força de Vontade chegar ao fim</span><a class="anchor" href="#g-5-deixar-a-força-de-vontade-chegar-ao-fim" aria-label="Link para esta seção">#</a></h3>
+<p>Esta é a que mais mata personagem. Quando a trilha de Força de Vontade enche:</p>
+<ul>
+<li>−2 dados em todas as paradas sociais e mentais</li>
+<li><strong>e você não consegue ativar nenhum poder</strong></li>
+</ul>
+<p>A Quirk que ia salvar a cena não sai. Guarde Força de Vontade do mesmo jeito que guardaria munição — e lembre que abafar toda Tensão que aparece é o jeito mais rápido de esvaziar a trilha.</p>
+<h3 id="g-bônus-convicção-genérica-é-convicção-inútil"><span>Bônus: Convicção genérica é Convicção inútil</span><a class="anchor" href="#g-bônus-convicção-genérica-é-convicção-inútil" aria-label="Link para esta seção">#</a></h3>
+<p>"Acredito na justiça" não serve para nada na mesa, porque não diz o que você faz. "Ninguém que eu levo numa missão morre sozinho" diz. Ela cria cenas, cria dilemas, e uma vez por sessão ela <strong>apaga uma Mancha</strong>.</p>
+<h3 id="g-bônus-2-para-o-narrador-contar-inimigos-em-vez-de-força"><span>Bônus 2, para o Narrador: contar inimigos em vez de força</span><a class="anchor" href="#g-bônus-2-para-o-narrador-contar-inimigos-em-vez-de-força" aria-label="Link para esta seção">#</a></h3>
+<p>Quatro personagens vencem três capangas em 99% das vezes e seis capangas em 23%. A curva é um penhasco porque cada inimigo a mais é uma rolagem de defesa a mais contra cada personagem. Para tornar uma cena difícil sem torná-la fatal, dê aos inimigos mais Saúde e Blindagem — nunca mais corpos.</p>
+<div class="anx anx-vant"><h2 id="g-anexo-a-vantagens"><span class="sec">ANX.A</span><span>Vantagens</span><a class="anchor" href="#g-anexo-a-vantagens" aria-label="Link para esta seção">#</a></h2>
+<p>Você tem <strong>sete pontos</strong> na criação. Depois, subir uma Vantagem custa <strong>novo valor × 3</strong> de experiência.</p>
+<blockquote>
+<p>O jogador pode sugerir uma Vantagem vinda de outros sistemas de RPG, desde que discuta com o Narrador a pertinência dela na crônica e o seu valor em pontos.</p>
+</blockquote>
+<h3 id="g-progressivas-valem-de-1-a-5-pontos"><span>Progressivas — valem de 1 a 5 pontos</span><a class="anchor" href="#g-progressivas-valem-de-1-a-5-pontos" aria-label="Link para esta seção">#</a></h3>
+<p><strong>Recursos.</strong> <span class="lvl">1</span>: 500 créditos por mês, 1.000 em bens — um quarto alugado, comida, uma arma barata. <span class="lvl">2</span>: 1.000 / 5.000 — apartamento, veículo usado. <span class="lvl">3</span>: 2.000 / 10.000 — casa própria, um implante de qualidade. <span class="lvl">4</span>: 10.000 / 500.000 — propriedade, equipe pequena, tecnologia restrita. <span class="lvl">5</span>: 50.000 / 5.000.000 — empresa, frota, poder de comprar pessoas e silêncio.</p>
+<p><strong>Contatos.</strong> Gente que atende a sua ligação e passa informação. Teste de Manipulação + Persuasão; suborno ou favor dá +1 a +3 dados. <span class="lvl">1</span>: um bairro. <span class="lvl">2</span>: uma cidade. <span class="lvl">3</span>: uma nação, com acesso ao mercado negro. <span class="lvl">4</span>: várias nações, alguém dentro de um governo. <span class="lvl">5</span>: continental — resposta para quase qualquer pergunta em 48 horas.</p>
+<p><strong>Aliados.</strong> Gente que <strong>age</strong> por você, não só informa. Some Eficácia + Confiabilidade; máximo de seis pontos num só Aliado. Eficácia <span class="lvl">1</span>: pessoa comum. <span class="lvl">2</span>: competente, ou um grupo unido de comuns. <span class="lvl">3</span>: excepcional, ou um grupo perigoso. <span class="lvl">4</span>: letal, ou um esquadrão bem armado. Confiabilidade <span class="lvl">1</span>: aparece metade das vezes. <span class="lvl">2</span>: em 1 a 10 horas. <span class="lvl">3</span>: assim que for possível.</p>
+<p><strong>Mentor.</strong> Alguém mais poderoso que ensina, protege e usa você. <strong>Todo Mentor cobra.</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Pontos</th>
+<th>Quem é</th>
+<th>XP para adquirir depois</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Um veterano de rua, um técnico experiente</td>
+<td>3</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Um especialista respeitado, um oficial de patente média</td>
+<td>6</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Um líder de facção, um cientista de renome, um Nefilin antigo</td>
+<td>9</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Um chefe de Estado, um comandante de frota, um Anunnaki menor ou um Youkai</td>
+<td>12</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Um Anunnaki ou Youkai poderoso, um Titânico, uma entidade dos Nexus</td>
+<td>15</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p>Um Mentor de nível 4 ou 5 é um deus, e deuses têm planos. Ele vai salvar a sua vida uma vez e pedir uma coisa impossível depois.</p>
+</blockquote>
+<p><strong>Fama.</strong> +1 dado por ponto com quem o reconhece. E <strong>−1 por ponto</strong> em Furtividade e em tudo que dependa de passar despercebido. <span class="lvl">1</span>: uma subcultura. <span class="lvl">2</span>: uma cidade. <span class="lvl">3</span>: uma nação. <span class="lvl">4</span>: todo mundo da sua área. <span class="lvl">5</span>: audiência planetária.</p>
+<p><strong>Influência.</strong> Poder de mover instituições. <span class="lvl">1</span>: uma multa sumida. <span class="lvl">2</span>: uma licença, uma inspeção que não acontece. <span class="lvl">3</span>: uma investigação encerrada. <span class="lvl">4</span>: uma lei local, uma operação militar pequena. <span class="lvl">5</span>: política nacional.</p>
+<p><strong>Status.</strong> Posição formal dentro de uma organização, facção ou raça. +1 dado por ponto nas interações internas. <span class="lvl">1</span>: membro reconhecido. <span class="lvl">3</span>: oficial com comando. <span class="lvl">5</span>: figura de topo.</p>
+<p><strong>Refúgio.</strong> Cada ponto soma <strong>+1 à dificuldade</strong> de quem tenta localizar, invadir ou vigiar o lugar, e <strong>+1 dado</strong> para você perceber perigo lá dentro. <span class="lvl">1</span>: um quarto seguro. <span class="lvl">2</span>: apartamento com saída extra. <span class="lvl">3</span>: oficina ou laboratório funcional. <span class="lvl">4</span>: complexo com defesa e enfermaria. <span class="lvl">5</span>: instalação autônoma. Melhorias, a 1 ponto cada: <strong>Arsenal oculto · Cela · Segurança · Saída secreta · Oficina · Enfermaria · Arquivo · Guardas · Localização · Conforto · Blindagem Magitek</strong>.</p>
+<p><strong>IA Pessoal.</strong> <span class="lvl">1</span>: assistente, +1 dado numa perícia mental à escolha. <span class="lvl">2</span>: analista, uma vez por sessão faz sozinha uma rolagem de Investigação ou Informática. <span class="lvl">3</span>: parceira, +2 dados em Informática, opera sistemas remotamente enquanto você age. <span class="lvl">4</span>: independente, age como aliado, com paradas próprias e <strong>uma Convicção própria</strong>. <span class="lvl">5</span>: <strong>desperta</strong> — tem ficha completa, pode discordar de você e agir contra.</p>
+<blockquote>
+<p>Uma IA de nível 5 é um personagem, não um equipamento. Se a sua nunca disser não, você comprou errado.</p>
+</blockquote>
+<p><strong>Magitek.</strong> <span class="lvl">1</span>: um comunicador. <span class="lvl">2</span>: ferramentas — rastreador, inibidor, detector. <span class="lvl">3</span>: uma arma Magitek pessoal (Perfuração 2). <span class="lvl">4</span>: equipamento pesado, ou uma carapaça (Blindagem Magitek). <span class="lvl">5</span>: um artefato verdadeiro — ninguém sabe tudo o que ele faz.</p>
+<p><strong>Identidade.</strong> <span class="lvl">1</span>: identidade completa, passa em verificação estadual. <span class="lvl">2</span>: passa na verificação policial nacional. Com Identidade 2, por 1 ponto cada: <strong>Apagado</strong> (seus registros verdadeiros não existem mais) e <strong>Falsificador</strong> (você produz identidades para outros).</p>
+<p><strong>Segunda Quirk — só para Punk.</strong> 3 pontos: até o nível 2. 5 pontos: até o nível 3. 7 pontos: sem limite de nível. Uma <strong>terceira</strong> custa o dobro e exige Despertar 2 ou mais — ou vem de graça na Ascensão.</p>
+<blockquote>
+<p>Punks com mais de uma Quirk são raros o bastante para virar assunto. Cientistas os querem em mesas de laboratório, exércitos em contratos e cultos em altares.</p>
+</blockquote>
+<h3 id="g-de-valor-fechado"><span>De valor fechado</span><a class="anchor" href="#g-de-valor-fechado" aria-label="Link para esta seção">#</a></h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Vantagem</th>
+<th>Custo</th>
+<th>Efeito</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Gigante</strong></td>
+<td>4</td>
+<td>Tamanho +1, e portanto Saúde +1. Só na criação</td>
+</tr>
+<tr>
+<td><strong>Bom Senso</strong></td>
+<td>4</td>
+<td>Uma vez por capítulo, o Narrador é obrigado a dar uma dica ou um alerta</td>
+</tr>
+<tr>
+<td><strong>Fonte de Inspiração</strong></td>
+<td>4</td>
+<td>Uma vez por sessão, todos os aliados recuperam 1 superficial de Força de Vontade</td>
+</tr>
+<tr>
+<td><strong>Imune a Chip</strong></td>
+<td>4</td>
+<td>Nenhum implante de controle funciona em você por mais de uma cena</td>
+</tr>
+<tr>
+<td><strong>Aparência Deslumbrante</strong></td>
+<td>4</td>
+<td>+2 dados nas paradas sociais em que a aparência conte</td>
+</tr>
+<tr>
+<td><strong>Ambidestria</strong></td>
+<td>3</td>
+<td>Sem penalidade na mão ruim</td>
+</tr>
+<tr>
+<td><strong>Sexto Sentido</strong></td>
+<td>3</td>
+<td>Percebe a presença do sobrenatural na cena</td>
+</tr>
+<tr>
+<td><strong>Pistoleiro</strong></td>
+<td>3</td>
+<td>Duas pistolas na mesma ação. A segunda custa 1 superficial de FV, e você rola 1 dado a menos em defesas até o próximo turno</td>
+</tr>
+<tr>
+<td><strong>Ás do Volante</strong></td>
+<td>3</td>
+<td>Dirige e faz outra ação ao mesmo tempo. A segunda ação custa 1 superficial de FV</td>
+</tr>
+<tr>
+<td><strong>Consciência Holística</strong></td>
+<td>3</td>
+<td>Seus pacientes se recuperam na metade do tempo</td>
+</tr>
+<tr>
+<td><strong>Sentido de Alma</strong></td>
+<td>3</td>
+<td>Você percebe quando alguém por perto não tem alma</td>
+</tr>
+<tr>
+<td><strong>Veterano de Arrebatamento</strong></td>
+<td>3</td>
+<td>Imune a medo comum; +2 para resistir a efeitos de terror</td>
+</tr>
+<tr>
+<td><strong>Memória Eidética</strong></td>
+<td>2</td>
+<td>Não rola para lembrar o que viu ou leu; +2 sob pressão</td>
+</tr>
+<tr>
+<td><strong>Senso do Perigo</strong></td>
+<td>2</td>
+<td>+2 para detectar emboscadas, antes do turno-surpresa</td>
+</tr>
+<tr>
+<td><strong>Resistência a Toxinas</strong></td>
+<td>2</td>
+<td>+2 contra drogas, venenos e toxinas</td>
+</tr>
+<tr>
+<td><strong>Estômago de Avestruz</strong></td>
+<td>2</td>
+<td>+2 em Sobrevivência; +3 para resistir a privação</td>
+</tr>
+<tr>
+<td><strong>Desarme</strong></td>
+<td>2</td>
+<td>Se a margem igualar a Destreza do alvo, desarma em vez de causar dano</td>
+</tr>
+<tr>
+<td><strong>Equipamento Assinatura</strong></td>
+<td>2</td>
+<td>Um item único e insubstituível: +1 dado e uma propriedade especial</td>
+</tr>
+<tr>
+<td><strong>Aparência Marcante</strong></td>
+<td>2</td>
+<td>+1 dado nas paradas sociais em que a aparência conte</td>
+</tr>
+<tr>
+<td><strong>Sangue Antigo</strong></td>
+<td>2</td>
+<td>+2 dados com quem valoriza ascendência, e o direito de ser ouvido</td>
+</tr>
+<tr>
+<td><strong>Nascido no Deserto</strong></td>
+<td>2</td>
+<td>Imune às penalidades de calor ou frio da faixa externa; +2 em Sobrevivência lá</td>
+</tr>
+<tr>
+<td><strong>Leitor de Glifos</strong></td>
+<td>2</td>
+<td>Reconhece escrita divina sem teste</td>
+</tr>
+<tr>
+<td><strong>Ligeiro</strong></td>
+<td>1–3</td>
+<td>+1 de Deslocamento por ponto</td>
+</tr>
+<tr>
+<td><strong>Reflexos Rápidos</strong></td>
+<td>1–2</td>
+<td>+1 de Iniciativa por ponto</td>
+</tr>
+<tr>
+<td><strong>Estilo de Luta</strong></td>
+<td>1–5</td>
+<td>Boxe, Kung Fu, Duas Armas, Lança, Jiu-Jitsu. Uma manobra por ponto</td>
+</tr>
+<tr>
+<td><strong>Saque Rápido</strong></td>
+<td>1</td>
+<td>Saca e ataca na mesma ação, sem penalidade</td>
+</tr>
+<tr>
+<td><strong>Imunidade Natural</strong></td>
+<td>1</td>
+<td>+2 contra doenças e infecções</td>
+</tr>
+<tr>
+<td><strong>Costas Fortes</strong></td>
+<td>1</td>
+<td>+1 para levantar e carregar</td>
+</tr>
+<tr>
+<td><strong>Recuperação Rápida</strong></td>
+<td>1</td>
+<td>Metade do tempo para se recuperar de ferimentos</td>
+</tr>
+<tr>
+<td><strong>Políglota</strong></td>
+<td>1 cada</td>
+<td>Um idioma adicional</td>
+</tr>
+<tr>
+<td><strong>Habitué</strong></td>
+<td>1</td>
+<td>Entra em qualquer clube, bar ou casa noturna</td>
+</tr>
+<tr>
+<td><strong>Alta Tolerância</strong></td>
+<td>1</td>
+<td>+1 dado numa categoria de parada enquanto estiver com a sua substância</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="anx anx-def"><h2 id="g-anexo-b-defeitos"><span class="sec">ANX.B</span><span>Defeitos</span><a class="anchor" href="#g-anexo-b-defeitos" aria-label="Link para esta seção">#</a></h2>
+<p>Você começa com <strong>dois pontos</strong> de Defeitos. Comprar mais dá pontos extras de Vantagem, até o máximo de <strong>quatro</strong>.</p>
+<blockquote>
+<p><strong>Pontos de Defeito só compram Vantagens.</strong> Eles servem para comprar ou melhorar Vantagens — nunca para subir Trilhas de Poder.</p>
+<p>O jogador também pode trazer Defeitos e Desvantagens de outros sistemas de RPG, nas mesmas condições das Vantagens: pertinência e valor combinados com o Narrador.</p>
+</blockquote>
+<h3 id="g-progressivos"><span>Progressivos</span><a class="anchor" href="#g-progressivos" aria-label="Link para esta seção">#</a></h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Defeito</th>
+<th>Valor</th>
+<th>Efeito</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Caçado</strong></td>
+<td>1–3</td>
+<td>Alguém quer você. <strong>1</strong> uma gangue ou um agente · <strong>2</strong> uma organização com recursos · <strong>3</strong> uma facção estatal, ou algo que não é humano. Aparece ao menos uma vez por arco</td>
+</tr>
+<tr>
+<td><strong>Inimigo</strong></td>
+<td>1–3</td>
+<td>Uma pessoa específica, com nome e motivo. Diferente de Caçado: este quer ver você sofrer antes</td>
+</tr>
+<tr>
+<td><strong>Dívida</strong></td>
+<td>1–3</td>
+<td>Você deve a gente perigosa. <strong>1</strong> dinheiro · <strong>2</strong> um favor sem limite definido · <strong>3</strong> uma vida, sua ou de outro</td>
+</tr>
+<tr>
+<td><strong>Fama Ruim</strong></td>
+<td>1–3</td>
+<td>Sua reputação chega antes de você. −1 dado por ponto com quem ouviu falar</td>
+</tr>
+<tr>
+<td><strong>Dependência</strong></td>
+<td>1–3</td>
+<td>Substância, procedimento, implante ou pessoa. Sem acesso, −1 dado por ponto em tudo</td>
+</tr>
+<tr>
+<td><strong>Segredo</strong></td>
+<td>1–2</td>
+<td>Você fez algo que, se vier à tona, custa tudo. <strong>1</strong> custa a sua posição · <strong>2</strong> custa a sua vida</td>
+</tr>
+<tr>
+<td><strong>Infâmia</strong></td>
+<td>1–2</td>
+<td>Você é conhecido por algo horrível. A dificuldade de toda reação hostil sobe pelo valor</td>
+</tr>
+<tr>
+<td><strong>Assombrado</strong></td>
+<td>1 por ponto</td>
+<td>Há uma manifestação no seu refúgio que você não controla nem entende. −1 dado por ponto nas rolagens feitas ali</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="g-fixos"><span>Fixos</span><a class="anchor" href="#g-fixos" aria-label="Link para esta seção">#</a></h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Defeito</th>
+<th>Valor</th>
+<th>Efeito</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Marca do Vazio</strong></td>
+<td>3</td>
+<td>Criaturas dos desertos percebem você a quilômetros, e o priorizam</td>
+</tr>
+<tr>
+<td><strong>Anomalia Registrada</strong></td>
+<td>3</td>
+<td>Alguma instituição mantém um arquivo atualizado sobre você. Você não sabe qual, nem o que há nele</td>
+</tr>
+<tr>
+<td><strong>Marcado</strong></td>
+<td>2</td>
+<td>Sua biometria e apelidos constam de bancos de inteligência, sinalizados</td>
+</tr>
+<tr>
+<td><strong>Membro Perdido</strong></td>
+<td>2</td>
+<td>Um braço, uma perna ou um olho. −2 em tudo que exigiria o membro. Resolvível com Improvement, e aí vira história</td>
+</tr>
+<tr>
+<td><strong>Frágil</strong></td>
+<td>2</td>
+<td>Tamanho −1, e portanto Saúde −1</td>
+</tr>
+<tr>
+<td><strong>Compulsão Ampliada</strong></td>
+<td>2</td>
+<td>A sua Compulsão racial engatilha com <strong>duas</strong> falhas, não três</td>
+</tr>
+<tr>
+<td><strong>Alma Marcada</strong></td>
+<td>2</td>
+<td>Algo já reivindicou a sua alma. Purificação não funciona, e há quem consiga rastreá-la</td>
+</tr>
+<tr>
+<td><strong>Rejeição</strong></td>
+<td>2</td>
+<td>Seus implantes brigam com o seu corpo. Todo Colapso causa também 1 agravado de Saúde</td>
+</tr>
+<tr>
+<td><strong>Consciência Pesada</strong></td>
+<td>2</td>
+<td>Você não faz o Teste de Remorso: toda Mancha não perdoada custa Moralidade direto</td>
+</tr>
+<tr>
+<td><strong>Fome de Alma</strong></td>
+<td>2</td>
+<td>Você precisa de gente por perto. Sozinho por mais de um dia, −2 dados em tudo</td>
+</tr>
+<tr>
+<td><strong>Intolerância à Tecnologia Divina</strong></td>
+<td>2</td>
+<td>Magitek reage mal a você. Dispositivos falham, emperram ou queimam na sua mão</td>
+</tr>
+<tr>
+<td><strong>Dívida de Sangue</strong></td>
+<td>2</td>
+<td>Alguém salvou a sua vida e você aceitou a dívida. Quando cobrar, recusar custa 2 agravados de Força de Vontade</td>
+</tr>
+<tr>
+<td><strong>Compromisso</strong></td>
+<td>2</td>
+<td>Você não faz o Teste de Remorso por uma Convicção específica: quebrá-la custa Moralidade direto</td>
+</tr>
+<tr>
+<td><strong>Repulsivo</strong></td>
+<td>2</td>
+<td>−2 dados nas paradas sociais em que a aparência conte</td>
+</tr>
+<tr>
+<td><strong>Comprometido</strong></td>
+<td>2</td>
+<td>O seu refúgio já foi invadido uma vez e está numa lista. Invasores ganham 2 dados</td>
+</tr>
+<tr>
+<td><strong>Sem Refúgio</strong></td>
+<td>1</td>
+<td>Você não tem onde dormir. Toda noite exige um teste para achar lugar</td>
+</tr>
+<tr>
+<td><strong>Sinistro</strong></td>
+<td>1</td>
+<td>O seu refúgio parece o que é. −2 dados para deixar visitantes à vontade ali</td>
+</tr>
+<tr>
+<td><strong>Registro Militar</strong></td>
+<td>1</td>
+<td>Você consta como desertor em algum dos cinco Estados. Fronteiras são um problema</td>
+</tr>
+<tr>
+<td><strong>Sem Documentos</strong></td>
+<td>1</td>
+<td>Você não existe oficialmente. Hospitais, contratos e bancos são um problema</td>
+</tr>
+<tr>
+<td><strong>Morto no Papel</strong></td>
+<td>1</td>
+<td>Consta que você morreu. Quem sabe disso reage com choque ao ver você</td>
+</tr>
+<tr>
+<td><strong>Analfabeto em Sistemas</strong></td>
+<td>1</td>
+<td>Não opera nada mais complexo que uma arma. Informática é sempre dificuldade +2</td>
+</tr>
+<tr>
+<td><strong>Perseguidor</strong></td>
+<td>1</td>
+<td>Você atrai gente que se apega demais. Se se livrar de um, aparece outro</td>
+</tr>
+<tr>
+<td><strong>Feio</strong></td>
+<td>1</td>
+<td>−1 dado nas paradas sociais em que a aparência conte</td>
+</tr>
+<tr>
+<td><strong>Inepto</strong></td>
+<td>1 cada</td>
+<td>Escolha uma perícia mental. −3 dados ao usá-la sem treinamento</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<h2 id="g-anexo-c-as-dezessete-trilhas"><span class="sec">ANX.C</span><span>As dezessete Trilhas</span><a class="anchor" href="#g-anexo-c-as-dezessete-trilhas" aria-label="Link para esta seção">#</a></h2>
+<p>Na criação você põe <strong>2 pontos</strong> numa Trilha afim e <strong>1 ponto</strong> em outra afim. Depois, subir custa <strong>novo valor × 5</strong> se for afim, e <strong>× 7</strong> se não for. A sua <strong>Quirk</strong> é sempre afim para quem a tem, e o seu molde está na seção 9.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Trilha</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>IMPROVEMENT</strong></td>
+<td>Um membro aprimorado: +1 dado numa perícia física</td>
+<td>Cybereye: grava tudo, +2 em percepção visual</td>
+<td>Cyberarm: +2 de dano desarmado, agarrar mecânico</td>
+<td>Cyberbullet: escolhe um efeito adverso por disparo</td>
+<td>Exoesqueleto: Blindagem e Força +2 por cena</td>
+</tr>
+<tr>
+<td><strong>SYSTEM</strong></td>
+<td>Interface direta com máquinas</td>
+<td>Duas ações mentais por turno</td>
+<td>Invade sistemas por contato</td>
+<td>Delega uma ação a si mesmo</td>
+<td>Um backup ativo em outro corpo</td>
+</tr>
+<tr>
+<td><strong>PROLIFERATION</strong></td>
+<td>Cura 1 nível por hora</td>
+<td>Regenera membros</td>
+<td>Gasta Saúde para curar outro, 1 para 3</td>
+<td>Adapta-se a ambientes letais</td>
+<td>Recompõe-se de quase nada</td>
+</tr>
+<tr>
+<td><strong>MIRACLE</strong></td>
+<td>Sente o sobrenatural</td>
+<td>Pequena alteração da realidade</td>
+<td>Cura ou fere pela vontade</td>
+<td>Reescreve um evento da cena</td>
+<td>Milagre pleno: uma vez por crônica</td>
+</tr>
+<tr>
+<td><strong>DOMAIN</strong></td>
+<td>Imune ao próprio elemento</td>
+<td>+1 dado por nível com ele</td>
+<td>Dano agravado, Perfuração contra Blindagem não-Magitek</td>
+<td>Manifestação em escala de cena</td>
+<td>Manifestação em escala de campo de batalha</td>
+</tr>
+<tr>
+<td><strong>INSTINCT</strong></td>
+<td>Sentidos ampliados</td>
+<td>Rastreia por cheiro através da cidade</td>
+<td>Prevê o ataque: +2 na resistência</td>
+<td>Sentidos de predador plenos</td>
+<td>Forma de besta</td>
+</tr>
+<tr>
+<td><strong>MOTHER NATURE</strong></td>
+<td>Um traço animal menor</td>
+<td>Um traço funcional: garras, guelras</td>
+<td>Asas, cauda ou membro extra</td>
+<td>Forma parcial da besta: Tamanho +1 enquanto durar</td>
+<td>Forma plena: Tamanho +1 e sem duração</td>
+</tr>
+<tr>
+<td><strong>DEVOUR</strong></td>
+<td>Toque letal a pequenos seres</td>
+<td>Absorve a alma de um recém-morto</td>
+<td>Usa a Quirk da alma absorvida por uma hora</td>
+<td>Perturba a alma antes que ela parta</td>
+<td>Devora a alma: ela não retorna</td>
+</tr>
+<tr>
+<td><strong>BOND</strong></td>
+<td>Lê a emoção dominante</td>
+<td>Transfere uma sensação</td>
+<td>Empresta 1 dado a um aliado na cena</td>
+<td>Compartilha Saúde ou Força de Vontade</td>
+<td>O grupo inteiro rerrola 1 dado por turno</td>
+</tr>
+<tr>
+<td><strong>GRIT</strong></td>
+<td>+1 de Força de Vontade máxima</td>
+<td>Ignora 1 ponto de penalidade por ferimento</td>
+<td>Age uma vez mesmo Debilitado</td>
+<td>Converte 1 agravado em superficial por cena</td>
+<td>Não sai de cena até resolver o que veio fazer</td>
+</tr>
+<tr>
+<td><strong>BULWARK</strong></td>
+<td>Blindagem +1</td>
+<td>Protege um aliado adjacente</td>
+<td>Reduz um nível de letalidade</td>
+<td>Blindagem +2</td>
+<td>Imune a dano superficial por uma cena</td>
+</tr>
+<tr>
+<td><strong>PRECISION</strong></td>
+<td>+1 em disparo</td>
+<td>Ignora 1 de cobertura</td>
+<td>Alvo específico sem penalidade</td>
+<td>Dois alvos numa ação</td>
+<td>Um tiro, um alvo, dano automático</td>
+</tr>
+<tr>
+<td><strong>WINGS</strong></td>
+<td>Plana</td>
+<td>Voo pleno</td>
+<td>Voo em combate sem penalidade</td>
+<td>Carrega outra pessoa em voo</td>
+<td>Mergulho: ataque devastador</td>
+</tr>
+<tr>
+<td><strong>OMNISCIENCE</strong></td>
+<td>Sabe se alguém mente</td>
+<td>Sabe o nome verdadeiro de quem vê</td>
+<td>Uma pergunta por cena que o Narrador responde com verdade</td>
+<td>Vê o passado de um objeto</td>
+<td>Vê um fragmento do futuro</td>
+</tr>
+<tr>
+<td><strong>CHAOS</strong></td>
+<td>Provoca um pequeno azar</td>
+<td>Reverte a sorte de um alvo por uma rolagem</td>
+<td>Espalha pânico numa multidão</td>
+<td>Nada funciona como devia por uma cena</td>
+<td>Quebra uma certeza do mundo</td>
+</tr>
+<tr>
+<td><strong>APPETITE</strong></td>
+<td>Recupera Saúde ao ferir</td>
+<td>Rouba um sentimento</td>
+<td>Rouba vitalidade à distância</td>
+<td>Rouba uma perícia por uma cena</td>
+<td>Rouba anos de vida</td>
+</tr>
+<tr>
+<td><strong>ALLURE</strong></td>
+<td>+2 em sedução</td>
+<td>Ninguém consegue ser hostil na primeira cena</td>
+<td>Um alvo faz um pequeno favor sem perceber</td>
+<td>Comanda a atenção de uma sala inteira</td>
+<td>Um alvo trai o que ama por você</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="g-onde-cada-uma-costuma-aparecer"><span>Onde cada uma costuma aparecer</span><a class="anchor" href="#g-onde-cada-uma-costuma-aparecer" aria-label="Link para esta seção">#</a></h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Se você é</th>
+<th>Olhe primeiro para</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Punk, Cyberpunk, Han'you, Nefilin</td>
+<td>A sua <strong>Quirk</strong>, e depois Improvement ou Grit</td>
+</tr>
+<tr>
+<td>Android ou Mecha</td>
+<td>System, Precision, Bulwark</td>
+</tr>
+<tr>
+<td>Lycan</td>
+<td>Instinct, Mother Nature, Grit</td>
+</tr>
+<tr>
+<td>Other</td>
+<td>Proliferation, Bond, Instinct</td>
+</tr>
+<tr>
+<td>Anunnaki ou Nefilin</td>
+<td>Miracle, Domain, Omniscience</td>
+</tr>
+<tr>
+<td>Youkai</td>
+<td>Devour, Chaos, Domain</td>
+</tr>
+<tr>
+<td>Humano</td>
+<td>Bond, Grit, e uma livre</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="g-anexo-d-experiência"><span class="sec">ANX.D</span><span>Experiência</span><a class="anchor" href="#g-anexo-d-experiência" aria-label="Link para esta seção">#</a></h2>
+<h3 id="g-custos"><span>Custos</span><a class="anchor" href="#g-custos" aria-label="Link para esta seção">#</a></h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>O que</th>
+<th>Custo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Atributo</td>
+<td>novo valor × 5</td>
+</tr>
+<tr>
+<td>Perícia</td>
+<td>novo valor × 3</td>
+</tr>
+<tr>
+<td>Especialização</td>
+<td>3</td>
+</tr>
+<tr>
+<td>Trilha afim</td>
+<td>novo valor × 5</td>
+</tr>
+<tr>
+<td>Trilha não-afim</td>
+<td>novo valor × 7</td>
+</tr>
+<tr>
+<td>Vantagem</td>
+<td>novo valor × 3</td>
+</tr>
+<tr>
+<td>Moralidade</td>
+<td>novo valor × 10, máximo 1 ponto por arco</td>
+</tr>
+<tr>
+<td><strong>Despertar</strong></td>
+<td><strong>Não se compra. Só se conquista nos dados</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Tetos:</strong> Atributo 5, Perícia 5, Trilha 5 — com a única exceção do Despertar 4, que permite um Atributo passar de 5.</p>
+<p><strong>Humans gastam metade da experiência em Perícias.</strong> Toda evolução exige justificativa narrativa.</p>
+<h3 id="g-ganho-por-sessão"><span>Ganho por sessão</span><a class="anchor" href="#g-ganho-por-sessão" aria-label="Link para esta seção">#</a></h3>
+<p><strong>Até 10 pontos de base:</strong> conceito bem interpretado (2) · coerência com a Falha e a Compulsão (2) · coerência com as Convicções (2) · interação com os outros personagens (2) · interpretação geral (2).</p>
+<p><strong>Até 10 pontos de bônus:</strong> interpretação excelente do conceito (2) · da Falha e Compulsão (2) · das Convicções (2) · acertos que mudaram o destino da cena (2) · soluções inusitadas e envolvimento fora da mesa (2).</p>
+<p><strong>⭐ PLUS ULTRA:</strong> escreva o relato da sessão, em primeira pessoa, e poste no drive do grupo. Em troca, escolha <strong>uma</strong> recompensa: <strong>4 XP</strong> · <strong>apagar uma Mancha ou recuperar 1 ponto</strong> de Moralidade · <strong>um 10 garantido</strong> num dado de Tensão na próxima sessão · <strong>rerrolar um 1</strong> que caia num dado de Tensão na próxima sessão.</p>
+<h3 id="g-o-ritmo-que-isso-produz"><span>O ritmo que isso produz</span><a class="anchor" href="#g-o-ritmo-que-isso-produz" aria-label="Link para esta seção">#</a></h3>
+<p>A 15 XP por sessão, que é a média realista:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Compra</th>
+<th>Custo</th>
+<th>Sessões</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Especialização nova</td>
+<td>3</td>
+<td>0,2</td>
+</tr>
+<tr>
+<td>Perícia 2 → 3</td>
+<td>9</td>
+<td>0,6</td>
+</tr>
+<tr>
+<td>Trilha afim 1 → 2</td>
+<td>10</td>
+<td>0,7</td>
+</tr>
+<tr>
+<td>Atributo 3 → 4</td>
+<td>20</td>
+<td>1,3</td>
+</tr>
+<tr>
+<td>Trilha afim inteira, 1 → 5</td>
+<td>70</td>
+<td>4,7</td>
+</tr>
+<tr>
+<td>Atributo 2 → 5</td>
+<td>60</td>
+<td>4,0</td>
+</tr>
+</tbody>
+</table></div>
+<p>Uma compra pequena por sessão, uma Trilha completa por arco. Em doze sessões uma célula sai do patamar Experiente e ultrapassa o Heroico.</p>
+    </article>
+  </div>
+</section>
+
+<a class="toplink" id="toplink" href="#top" aria-label="Voltar ao topo" hidden>↑</a>
+
+<footer>
+  <div class="shell">
+    <div class="foot-in">
+      <span>PlanetHell: 2663 · Guia do Jogador</span>
+    </div>
+    <div class="legal">
+      <p><b>Uso livre e gratuito.</b> PlanetHell é um projeto de fãs, sem fins comerciais, feito apenas para diversão. Pode ser jogado, copiado e compartilhado livremente, desde que sem venda.</p>
+      <p>O sistema de regras é adaptado de <i>Vampire: The Masquerade</i> 5ª edição (V5) e do Mundo das Trevas. <i>Vampire: The Masquerade</i>, <i>World of Darkness</i> e marcas relacionadas pertencem à Paradox Interactive AB e aos seus licenciados. Este projeto não é afiliado, patrocinado nem endossado por eles.</p>
+      <p>Nomes, personagens, lugares, organizações e eventos são fictícios. Qualquer semelhança com pessoas, entidades ou fatos reais é mera coincidência.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var reduce=false; try{reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+
+  /* ---------------- dice roller ---------------- */
+  function fill(id,from,to,val){var s=document.getElementById(id);for(var i=from;i<=to;i++){var o=document.createElement('option');o.value=i;o.textContent=i;if(i===val)o.selected=true;s.appendChild(o);}return s;}
+  var selPool=fill('r-pool',1,15,6), selAuto=fill('r-auto',1,5,3), selDif=fill('r-dif',1,5,2);
+  var tray=document.getElementById('r-tray'), out=document.getElementById('r-out');
+  var rows={}; [].forEach.call(document.querySelectorAll('#ladder tbody tr'),function(tr){rows[tr.getAttribute('data-r')]=tr;});
+  var NAMES={contratempo:'Contratempo',tensao:'Tensão',colapso:'Colapso',compulsao:'Compulsão',lampejo:'Lampejo',sobrecarga:'Sobrecarga',despertar:'Despertar'};
+
+  function d10(){return 1+Math.floor(Math.random()*10);}
+  function roll(n,t){
+    var dice=[];
+    for(var i=0;i<n;i++){
+      var ten=i<t, v=d10(), x=false;
+      dice.push({v:v,t:ten,x:false});
+      while(v===10){v=d10();dice.push({v:v,t:ten,x:true});}
+    }
+    return dice;
+  }
+  function judge(dice,dif){
+    var s=0,t1=0,t10=0,n1=0,n10=0;
+    dice.forEach(function(d){if(d.v>=6)s++; if(d.t){if(d.v===1)t1++;if(d.v===10)t10++;}else{if(d.v===1)n1++;if(d.v===10)n10++;}});
+    var cobra=null,paga=null;
+    if(t1>=3)cobra='compulsao';else if(t1===2)cobra='colapso';else if(t1===1)cobra='tensao';else if(n1>=2)cobra='contratempo';
+    if(t10>=3)paga='despertar';else if(t10===2)paga='sobrecarga';else if(n10>=2)paga='lampejo';
+    return {s:s,t1:t1,t10:t10,n1:n1,n10:n10,cobra:cobra,paga:paga,dif:dif};
+  }
+  function combo(r){
+    if(r.paga==='despertar') return 'O Despertar devolve todo o superficial. O agravado sempre fica.';
+    if(r.paga==='sobrecarga'&&r.cobra==='compulsao') return 'O agravado da Compulsão fica, por mais espetacular que tenha sido o acerto.';
+    if(r.paga==='sobrecarga'&&r.cobra==='colapso') return 'Não se anulam: a Vontade empata, mas a consequência grave do Colapso permanece.';
+    if(r.paga&&r.cobra==='tensao') return 'Anulam-se na Força de Vontade — mas o 1 ainda piorou alguma coisa na cena.';
+    return '';
+  }
+  function render(dice,r,animate){
+    tray.innerHTML='';
+    dice.forEach(function(d,i){
+      var el=document.createElement('span');
+      el.className='die'+(d.t?' t':'')+(d.v>=6?' ok':'')+(d.v===1?' one':'')+(d.v===10?' ten':'')+(d.x?' x':'')+(animate&&!reduce?' roll-in':'');
+      if(animate&&!reduce) el.style.animationDelay=(i*45)+'ms';
+      el.textContent=d.v;
+      el.setAttribute('title',(d.t?'Tensão':'Normal')+(d.x?' · explosão':''));
+      tray.appendChild(el);
+    });
+    Object.keys(rows).forEach(function(k){rows[k].classList.remove('hit');});
+    if(r.cobra)rows[r.cobra].classList.add('hit');
+    if(r.paga)rows[r.paga].classList.add('hit');
+    var pass=r.paga==='despertar'||r.s>=r.dif, margin=r.s-r.dif;
+    var res = r.paga==='despertar' ? 'Sucesso absoluto' : (r.s===0 ? 'Fracasso total' : (pass ? 'Sucesso · margem '+margin : 'Falhou por '+(-margin)));
+    var ladder=[r.cobra&&NAMES[r.cobra], r.paga&&NAMES[r.paga]].filter(Boolean).join(' + ')||'Nada na escada';
+    var c=combo(r);
+    out.innerHTML=
+      '<div class="row"><span class="k">Sucessos</span><span class="v">'+r.s+' / '+r.dif+'</span></div>'+
+      '<div class="row"><span class="k">Resultado</span><span class="v'+(pass?'':' warn')+'">'+res+'</span></div>'+
+      '<div class="row"><span class="k">Escada</span><span class="v'+(r.cobra?' warn':'')+'">'+ladder+'</span></div>'+
+      (r.s===0&&r.paga!=='despertar'?'<p class="note">Zero sucessos não é só “não deu”: o Narrador é obrigado a dar uma consequência.</p>':'')+
+      (c?'<p class="note">'+c+'</p>':'');
+  }
+  function go(animate){
+    var n=+selPool.value, t=Math.min(+selAuto.value,n), dif=+selDif.value;
+    var dice=roll(n,t); render(dice,judge(dice,dif),animate);
+  }
+  document.getElementById('r-go').addEventListener('click',function(){go(true);});
+  [selPool,selAuto,selDif].forEach(function(s){s.addEventListener('change',function(){go(true);});});
+  /* opens on Bartlett's roll from section 4, so the first look shows a real result */
+  var bart=[{v:9,t:true},{v:4,t:true},{v:10,t:true},{v:8,t:true,x:true},{v:2,t:false},{v:7,t:false},{v:1,t:false}];
+  render(bart,judge(bart,2),false);
+
+  /* ---------------- progress, active nav, toc ---------------- */
+  var progress=document.getElementById('progress'), toplink=document.getElementById('toplink');
+  var guide=document.getElementById('guia'), pathCur=document.getElementById('path-cur');
+  var tocLinks=[].slice.call(document.querySelectorAll('.toc a'));
+  var heads=tocLinks.map(function(a){return document.getElementById(a.getAttribute('href').slice(1));});
+  var navLinks=[].slice.call(document.querySelectorAll('.topnav a'));
+  var navTargets=navLinks.map(function(a){return document.getElementById(a.getAttribute('href').slice(1));});
+  var ticking=false;
+  function onScroll(){
+    ticking=false;
+    var y=window.scrollY||window.pageYOffset, vh=window.innerHeight;
+    var doc=document.documentElement.scrollHeight-vh; progress.style.width=(doc>0?Math.min(100,y/doc*100):0)+'%';
+    var gTop=guide.offsetTop;
+    toplink.hidden = y < gTop + 400;
+    var cur=-1;
+    for(var i=0;i<heads.length;i++){ if(heads[i] && heads[i].getBoundingClientRect().top < 160) cur=i; }
+    tocLinks.forEach(function(a,i){
+      a.classList.toggle('on',i===cur);
+      var bar=a.querySelector('.bar'); if(!bar) return;
+      var start=heads[i]?heads[i].getBoundingClientRect().top:0, end=heads[i+1]?heads[i+1].getBoundingClientRect().top:document.getElementById('prose').getBoundingClientRect().bottom;
+      var len=end-start, done=len>0?Math.max(0,Math.min(1,(160-start)/len)):0; bar.style.width=(done*100)+'%';
+    });
+    pathCur.textContent = cur>=0 ? (tocLinks[cur].getAttribute('data-path')) : 'INÍCIO';
+    var nc=-1; for(var j=0;j<navTargets.length;j++){ if(navTargets[j] && navTargets[j].getBoundingClientRect().top < 140) nc=j; }
+    navLinks.forEach(function(a,j){a.classList.toggle('on',j===nc);});
+  }
+  window.addEventListener('scroll',function(){ if(!ticking){ticking=true;requestAnimationFrame(onScroll);} },{passive:true});
+  onScroll();
+  var box=document.getElementById('toc-box'), narrow=function(){try{return window.matchMedia('(max-width:980px)').matches;}catch(e){return false;}};
+  if(narrow()&&box) box.open=false;
+  tocLinks.forEach(function(a){a.addEventListener('click',function(){ if(narrow()&&box) box.open=false; });});
+
+  /* ---------------- search inside the guide ---------------- */
+  var prose=document.getElementById('prose'), q=document.getElementById('q'), qc=document.getElementById('q-count');
+  var prev=document.getElementById('q-prev'), next=document.getElementById('q-next');
+  var marks=[], idx=-1, timer=null;
+  function norm(s){return s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();}
+  function clear(){
+    marks.forEach(function(m){var p=m.parentNode; if(!p) return; p.replaceChild(document.createTextNode(m.textContent),m); p.normalize();});
+    marks=[]; idx=-1;
+  }
+  function search(term){
+    clear();
+    term=term.trim();
+    if(term.length<2){qc.textContent='';prev.disabled=next.disabled=true;return;}
+    var nt=norm(term), walker=document.createTreeWalker(prose,NodeFilter.SHOW_TEXT,null), nodes=[], n;
+    while((n=walker.nextNode())){ if(n.nodeValue.trim()) nodes.push(n); }
+    nodes.forEach(function(node){
+      var text=node.nodeValue, low=norm(text), at=low.indexOf(nt);
+      if(at<0) return;
+      var frag=document.createDocumentFragment(), last=0;
+      while(at>=0){
+        frag.appendChild(document.createTextNode(text.slice(last,at)));
+        var m=document.createElement('mark'); m.textContent=text.slice(at,at+nt.length); frag.appendChild(m); marks.push(m);
+        last=at+nt.length; at=low.indexOf(nt,last);
+      }
+      frag.appendChild(document.createTextNode(text.slice(last)));
+      node.parentNode.replaceChild(frag,node);
+    });
+    prev.disabled=next.disabled=marks.length===0;
+    if(marks.length){ go2(0); } else { qc.textContent='0 achados'; }
+  }
+  function go2(i){
+    if(!marks.length) return;
+    if(idx>=0&&marks[idx]) marks[idx].classList.remove('cur');
+    idx=(i+marks.length)%marks.length;
+    var m=marks[idx]; m.classList.add('cur');
+    qc.textContent=(idx+1)+' de '+marks.length;
+    var r=m.getBoundingClientRect(); window.scrollTo({top:(window.scrollY||window.pageYOffset)+r.top-190,behavior:reduce?'auto':'smooth'});
+  }
+  q.addEventListener('input',function(){ clearTimeout(timer); timer=setTimeout(function(){search(q.value);},220); });
+  q.addEventListener('keydown',function(e){
+    if(e.key==='Enter'){e.preventDefault(); go2(e.shiftKey?idx-1:idx+1);}
+    if(e.key==='Escape'){q.value='';search('');}
+  });
+  prev.addEventListener('click',function(){go2(idx-1);});
+  next.addEventListener('click',function(){go2(idx+1);});
+})();
+</script>
+
+</body>
+</html>

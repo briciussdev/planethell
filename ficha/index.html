@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ficha PlanetHell</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap">
+<link rel="stylesheet" href="ficha.css">
+</head>
+<body>
+
+<!-- ============ ENTRADA ============ -->
+<div class="gate" id="gate">
+  <div class="gate-box hud">
+    <h1>PLANETHELL</h1>
+    <p class="yr">FICHA DE PERSONAGEM · 2663</p>
+    <div class="tabs" role="tablist">
+      <button type="button" class="on" data-tab="entrar" role="tab">Entrar</button>
+      <button type="button" data-tab="criar" role="tab">Nova ficha</button>
+      <button type="button" data-tab="recuperar" role="tab">Esqueci o PIN</button>
+    </div>
+
+    <form id="f-entrar" data-painel="entrar" autocomplete="on">
+      <div class="f"><label for="e-usuario">Usuário</label><input id="e-usuario" name="username" autocomplete="username" autocapitalize="off" spellcheck="false" required></div>
+      <div class="f"><label for="e-pin">PIN (4 dígitos)</label><input id="e-pin" name="password" type="password" class="pin-in" inputmode="numeric" pattern="\d{4}" maxlength="4" autocomplete="current-password" required></div>
+      <button class="btn" type="submit">Entrar</button>
+      <p class="msg" id="m-entrar" role="status"></p>
+    </form>
+
+    <form id="f-criar" data-painel="criar" hidden>
+      <p class="note">Sem e-mail. Você escolhe um usuário, diz o seu primeiro nome, e o sistema gera um PIN de 4 dígitos. É tudo o que você vai precisar para abrir a sua ficha em qualquer aparelho.</p>
+      <div class="f"><label for="c-usuario">Escolha um usuário</label><input id="c-usuario" autocapitalize="off" spellcheck="false" placeholder="ex.: ana_corvo" required></div>
+      <div class="f"><label for="c-nome">Seu nome (só o primeiro)</label><input id="c-nome" autocomplete="given-name" placeholder="ex.: Ana" required></div>
+      <button class="btn" type="submit">Criar ficha em branco</button>
+      <p class="msg" id="m-criar" role="status"></p>
+    </form>
+
+    <div id="p-pin" hidden>
+      <p class="note">Ficha criada. Este é o seu PIN — anote agora:</p>
+      <div class="pin-show" id="pin-novo">0000</div>
+      <p class="note">Usuário <b id="pin-usuario"></b>. Se esquecer o PIN, dá para recuperar pelo nome do personagem e pela raça, depois que a ficha estiver salva com os dois.</p>
+      <button class="btn" type="button" id="pin-ok">Anotei — abrir a ficha</button>
+    </div>
+
+    <form id="f-recuperar" data-painel="recuperar" hidden>
+      <p class="note">Informe o nome do personagem e a raça, exatamente como estão na ficha salva.</p>
+      <div class="f"><label for="r-personagem">Nome do personagem</label><input id="r-personagem" required></div>
+      <div class="f"><label for="r-raca">Raça</label><select id="r-raca" required></select></div>
+      <button class="btn" type="submit">Recuperar</button>
+      <p class="msg" id="m-recuperar" role="status"></p>
+      <div id="r-resultado"></div>
+    </form>
+
+    <p class="local-note" id="aviso-local" hidden>Modo local: sem servidor configurado, as fichas ficam só neste navegador. Use “Salvar arquivo” para levar a ficha para outro aparelho.</p>
+  </div>
+</div>
+
+<!-- ============ BARRA ============ -->
+<header class="bar noprint">
+  <div class="wrap bar-in">
+    <a class="brand" href="../">PLANETHELL<small>FICHA</small></a>
+    <span class="who" id="who"></span>
+    <span class="sync" id="sync"></span>
+    <span class="sp"></span>
+    <div class="acts">
+      <button class="btn ghost small" type="button" id="b-salvar" title="Salvar agora e guardar uma cópia no histórico">Salvar</button>
+      <button class="btn ghost small" type="button" id="b-xlsx">Excel / Sheets</button>
+      <button class="btn ghost small" type="button" id="b-pdf">PDF</button>
+      <button class="btn ghost small" type="button" id="b-json">Arquivo</button>
+      <button class="btn ghost small" type="button" id="b-hist">Versões</button>
+      <button class="btn ghost small" type="button" id="b-sair">Sair</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap grid">
+<main class="main" id="ficha">
+
+  <!-- 1. identidade -->
+  <section class="hud" id="s-id">
+    <h2><span class="num">01</span>Identidade</h2>
+    <div class="fields">
+      <div class="f"><label for="i-personagem">Nome do personagem</label><input id="i-personagem" data-b="id.personagem"></div>
+      <div class="f"><label for="i-jogador">Jogador</label><input id="i-jogador" data-b="id.jogador" readonly></div>
+      <div class="f"><label for="i-conceito">Conceito (duas palavras)</label><input id="i-conceito" data-b="id.conceito" placeholder="Médica desertora"></div>
+      <div class="f"><label for="i-cronica">Crônica</label><input id="i-cronica" data-b="id.cronica"></div>
+      <div class="f"><label for="i-idade">Idade</label><input id="i-idade" data-b="id.idade" inputmode="numeric"></div>
+      <div class="f"><label for="i-nacao">Nação de origem</label><select id="i-nacao" data-b="id.nacao"></select></div>
+      <div class="f"><label for="i-patamar">Patamar inicial</label><select id="i-patamar" data-b="id.patamar"></select></div>
+      <div class="f"><label for="i-aparencia">Aparência</label><input id="i-aparencia" data-b="id.aparencia"></div>
+    </div>
+  </section>
+
+  <!-- 2. raça -->
+  <section class="hud" id="s-raca">
+    <h2><span class="num">02</span>Raça <span class="aux" id="raca-aux"></span></h2>
+    <div class="fields">
+      <div class="f"><label for="i-raca">Raça</label><select id="i-raca" data-b="raca"></select></div>
+      <div class="f" id="w-base" hidden><label for="i-base">Raça-base (Trick or Treat)</label><select id="i-base" data-b="racaBase"></select></div>
+      <div class="f" id="w-afimbase" hidden><label for="i-afimbase">Trilha afim da raça-base</label><select id="i-afimbase" data-b="afimBase"></select></div>
+      <div class="f" id="w-afimlivre" hidden><label for="i-afimlivre">Trilha afim livre (Human)</label><select id="i-afimlivre" data-b="afimLivre"></select></div>
+    </div>
+    <div class="race-info" id="raca-info"></div>
+  </section>
+
+  <!-- 3. atributos -->
+  <section class="hud" id="s-atr">
+    <h2><span class="num">03</span>Atributos <span class="aux" id="atr-aux"></span></h2>
+    <div class="cols3" id="atr"></div>
+    <p class="note">Na criação: um em <b>4</b>, três em <b>3</b>, quatro em <b>2</b>, um em <b>1</b>. Clique na mesma bolinha para descer um ponto.</p>
+  </section>
+
+  <!-- 4. perícias -->
+  <section class="hud" id="s-per">
+    <h2><span class="num">04</span>Perícias <span class="aux" id="per-aux"></span></h2>
+    <div class="cols3" id="per"></div>
+    <h3>Especializações <span id="esp-aux"></span></h3>
+    <div class="list" id="esp"></div>
+    <button class="btn ghost small" type="button" data-add="esp">+ Especialização</button>
+    <p class="note">Uma gratuita em Ciências, Ofícios, Erudição e Informática, se tiver pontos nelas, mais uma livre. Cada uma dá +1 dado na aplicação específica.</p>
+  </section>
+
+  <!-- 5. derivados -->
+  <section class="hud" id="s-der">
+    <h2><span class="num">05</span>Saúde, Vontade e derivados</h2>
+    <div class="stats" id="stats"></div>
+    <div class="cols2" style="margin-top:14px">
+      <div>
+        <h3>Saúde</h3>
+        <div class="track" id="t-saude"></div>
+        <p class="status" id="st-saude"></p>
+      </div>
+      <div>
+        <h3>Força de Vontade</h3>
+        <div class="track" id="t-fv"></div>
+        <p class="status" id="st-fv"></p>
+      </div>
+    </div>
+    <p class="note">Toque numa caixa: vazia → <b>/</b> superficial → <b>X</b> agravado → vazia. Superficial divide por dois antes de marcar; o que você gasta por vontade própria não divide.</p>
+  </section>
+
+  <!-- 6. moralidade e despertar -->
+  <section class="cols2">
+    <div class="hud" id="s-moral">
+      <h2><span class="num">06</span>Moralidade</h2>
+      <div class="trait"><span class="n">Moralidade <small id="moral-estado"></small></span><span class="dots" id="d-moral"></span></div>
+      <div class="trait"><span class="n">Manchas</span><span class="counter"><button type="button" data-c="manchas" data-d="-1" aria-label="Menos uma Mancha">−</button><output id="o-manchas">0</output><button type="button" data-c="manchas" data-d="1" aria-label="Mais uma Mancha">+</button></span></div>
+      <p class="note" id="moral-nota"></p>
+    </div>
+    <div class="hud" id="s-desp">
+      <h2><span class="num">07</span>Despertar</h2>
+      <div class="trait"><span class="n">Despertar</span><span class="dots" id="d-desp"></span></div>
+      <div class="f" id="w-atrdesp" hidden style="margin-top:8px"><label for="i-atrdesp">Despertar 4: Atributo que pode passar de 5</label><select id="i-atrdesp" data-b="atrDespertar"></select></div>
+      <div id="desp-info" class="note"></div>
+      <h3>Consequências</h3>
+      <div class="list" id="cons"></div>
+      <button class="btn ghost small" type="button" data-add="cons">+ Consequência</button>
+    </div>
+  </section>
+
+  <!-- 7. trilhas -->
+  <section class="hud" id="s-tr">
+    <h2><span class="num">08</span>Trilhas de Poder <span class="aux" id="tr-aux"></span></h2>
+    <div class="list" id="trilhas"></div>
+    <div class="row" style="margin-top:10px"><button class="btn ghost small" type="button" data-add="trilhas">+ Trilha</button></div>
+    <p class="note">Ativar: nível 1 grátis · 2 e 3, 1 superficial de Vontade · 4, 2 superficiais · 5, 1 agravado e uma vez por cena. Com a Vontade cheia de dano, nada ativa.</p>
+  </section>
+
+  <!-- 8. vantagens e defeitos -->
+  <section class="cols2">
+    <div class="hud" id="s-vant">
+      <h2><span class="num">09</span>Vantagens <span class="aux pool" id="vant-aux"></span></h2>
+      <div class="list" id="vant"></div>
+      <button class="btn ghost small" type="button" data-add="vant">+ Vantagem</button>
+      <p class="note">Escolha da lista ou escreva uma de outro sistema de RPG — combine a pertinência e o valor com o Narrador.</p>
+    </div>
+    <div class="hud" id="s-def">
+      <h2><span class="num">10</span>Defeitos <span class="aux pool" id="def-aux"></span></h2>
+      <div class="list" id="def"></div>
+      <button class="btn ghost small" type="button" data-add="def">+ Defeito</button>
+      <p class="note">De 2 a 4 pontos. Pontos de Defeito acima de 2 só compram Vantagens — nunca Trilhas.</p>
+    </div>
+  </section>
+
+  <!-- 9. convicções -->
+  <section class="hud" id="s-conv">
+    <h2><span class="num">11</span>Convicções, Ambição e Desejo</h2>
+    <div class="list" id="convic"></div>
+    <button class="btn ghost small" type="button" data-add="convic">+ Convicção</button>
+    <div class="cols2" style="margin-top:12px">
+      <div class="f"><label for="i-ambicao">Ambição (a crônica inteira)</label><input id="i-ambicao" data-b="ambicao"></div>
+      <div class="f"><label for="i-desejo">Desejo (esta sessão)</label><input id="i-desejo" data-b="desejo"></div>
+    </div>
+  </section>
+
+  <!-- 10. equipamento -->
+  <section class="hud" id="s-eq">
+    <h2><span class="num">12</span>Equipamento</h2>
+    <h3>Armas</h3><div class="list" id="armas"></div><button class="btn ghost small" type="button" data-add="armas">+ Arma</button>
+    <h3>Blindagem</h3><div class="list" id="blindagens"></div><button class="btn ghost small" type="button" data-add="blindagens">+ Blindagem</button>
+    <h3>Outros itens</h3><div class="list" id="itens"></div><button class="btn ghost small" type="button" data-add="itens">+ Item</button>
+  </section>
+
+  <!-- 11. experiência -->
+  <section class="hud" id="s-xp">
+    <h2><span class="num">13</span>Experiência <span class="aux" id="xp-aux"></span></h2>
+    <div class="stats" id="xp-stats"></div>
+    <div class="cols2" style="margin-top:12px">
+      <div class="noprint">
+        <h3>Ganhar XP</h3>
+        <div class="row">
+          <div class="f" style="flex:0 0 90px"><label for="g-qtd">XP</label><input id="g-qtd" type="number" min="1" max="99"></div>
+          <div class="f" style="flex:1 1 160px"><label for="g-nota">Motivo</label><input id="g-nota" placeholder="Sessão 3, Plus Ultra…"></div>
+          <button class="btn small" type="button" id="g-add">Somar</button>
+        </div>
+      </div>
+      <div class="noprint">
+        <h3>Comprar com XP</h3>
+        <div class="row">
+          <div class="f" style="flex:1 1 130px"><label for="k-tipo">O quê</label><select id="k-tipo"></select></div>
+          <div class="f" style="flex:1 1 150px"><label for="k-alvo">Qual</label><select id="k-alvo"></select></div>
+          <div class="f" style="flex:0 0 80px"><label for="k-custo">Custo</label><input id="k-custo" readonly></div>
+          <button class="btn small" type="button" id="k-comprar">Comprar</button>
+        </div>
+        <p class="note" id="k-nota"></p>
+      </div>
+    </div>
+    <h3>Registro</h3>
+    <div class="list" id="xplog"></div>
+  </section>
+
+  <!-- 12. rolador -->
+  <section class="hud roller-sec noprint" id="s-rol">
+    <h2><span class="num">14</span>Rolador</h2>
+    <div class="roller-ctl">
+      <div class="f"><label for="r-cat">Categoria</label><select id="r-cat"></select></div>
+      <div class="f"><label for="r-tipo">Rolagem</label><select id="r-tipo"></select></div>
+      <div class="f" id="w-ratr" hidden><label for="r-atr">Atributo</label><select id="r-atr"></select></div>
+      <div class="f" id="w-rper" hidden><label for="r-per">Perícia</label><select id="r-per"></select></div>
+      <div class="f" id="w-rarma" hidden><label for="r-arma">Arma</label><select id="r-arma"></select></div>
+      <div class="f" id="w-rman" hidden><label for="r-man">Manobra</label><select id="r-man"></select></div>
+      <div class="f"><label for="r-mod">Modificador</label><input id="r-mod" type="number" value="0"></div>
+      <div class="f"><label for="r-dif" id="l-dif">Dificuldade</label><input id="r-dif" type="number" value="2" min="0"></div>
+      <div class="f wide2" id="w-rblind" hidden><label for="r-blind">Blindagem do alvo</label><div class="row"><input id="r-blind" type="number" value="0" min="0" style="flex:0 0 64px"><select id="r-btipo" style="flex:1"><option value="leve">leve</option><option value="pesada" selected>pesada</option><option value="magitek">Magitek</option></select></div></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label class="chk"><input type="checkbox" id="r-esp"> +1 especialização</label>
+      <span class="sp" style="flex:1"></span>
+      <button class="btn" type="button" id="r-go">Rolar</button>
+    </div>
+    <p class="note" id="r-desc"></p>
+    <p class="formula" id="r-form"></p>
+    <div class="tray" id="r-tray" aria-live="polite"></div>
+    <div class="out" id="r-out"></div>
+  </section>
+
+  <!-- 13. notas -->
+  <section class="hud" id="s-notas">
+    <h2><span class="num">15</span>História e notas</h2>
+    <div class="cols2">
+      <div class="f"><label for="i-historia">História</label><textarea id="i-historia" data-b="historia" rows="8"></textarea></div>
+      <div class="f"><label for="i-notas">Notas da crônica</label><textarea id="i-notas" data-b="notas" rows="8"></textarea></div>
+    </div>
+  </section>
+</main>
+
+<aside class="side noprint">
+  <section class="hud check">
+    <h2>Verificação</h2>
+    <div class="modo" role="group" aria-label="Momento da ficha">
+      <button type="button" data-modo="criacao">Criação</button>
+      <button type="button" data-modo="jogo">Em jogo</button>
+    </div>
+    <p class="score" id="ck-score"></p>
+    <ul class="ck" id="ck"></ul>
+  </section>
+</aside>
+</div>
+
+<div class="modal" id="modal" hidden><div class="hud" id="modal-box"></div></div>
+<input type="file" id="arquivo" accept=".json,application/json" hidden>
+
+<script src="config.js"></script>
+<script src="dados.js"></script>
+<script src="rolagens.js"></script>
+<script src="regras.js"></script>
+<script src="armazem.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js" defer></script>
+<script src="exportar.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

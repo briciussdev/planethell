@@ -1,0 +1,14 @@
+{
+  "name": "planethell",
+  "private": true,
+  "description": "PlanetHell — Guia do Jogador e ficha de personagem",
+  "scripts": {
+    "test": "node testes/regras.test.js && node testes/servidor.test.js && node testes/rodar-navegador.js",
+    "dados": "python3 ferramentas/extrair_dados.py",
+    "site": "python3 ferramentas/construir_site.py"
+  },
+  "devDependencies": {
+    "exceljs": "4.4.0",
+    "playwright": "^1.47.0"
+  }
+}
