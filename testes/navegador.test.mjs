@@ -156,6 +156,36 @@ await p.pdf({ path: TMP + '/PlanetHell-Nadia-Corvo.pdf', format: 'A4', printBack
 ok(fs.statSync(TMP + '/PlanetHell-Nadia-Corvo.pdf').size > 20000, 'gera PDF pela folha de impressão');
 await p.emulateMedia({ media: 'screen' });
 
+/* ---------- o aparelho perdeu a cópia local (limpeza, aba anônima, espaço esgotado) ---------- */
+await p.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('ph.copia.')).forEach(k => localStorage.removeItem(k)));
+await p.reload();
+await p.waitForFunction(() => document.querySelector('#i-personagem').value === 'Nadia Corvo', null, { timeout: 20000 });
+ok(await p.isHidden('#modal'), 'sem a cópia local, a ficha volta do servidor sem perguntar nada');
+ok(await p.evaluate(() => window.PHApp.estado.pendente) === false, 'e a ficha em branco não é tratada como alteração a enviar');
+const [dl3] = await Promise.all([p.waitForEvent('download'), p.click('#b-xlsx')]);
+ok(dl3.suggestedFilename() === 'PlanetHell-Nadia-Corvo.xlsx', 'e o download sai com a ficha, não em branco');
+
+if (MODO === 'servidor') {
+  /* sem cópia local E sem servidor: a tela fica em branco, e aí nada pode ser baixado em silêncio */
+  await fetch('http://127.0.0.1:8788/__fora');
+  await p.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('ph.copia.')).forEach(k => localStorage.removeItem(k)));
+  await p.reload();
+  await p.waitForFunction(() => /Offline|Sem conexão/.test(document.querySelector('#sync').textContent), null, { timeout: 40000 });
+  ok(await p.inputValue('#i-personagem') === '', 'sem cópia e sem servidor, a ficha aparece em branco');
+  await p.click('#b-xlsx'); await p.waitForSelector('#modal:not([hidden])', { timeout: 10000 });
+  ok(/em branco/.test(await p.textContent('#modal h2')), 'baixar uma ficha em branco é barrado com aviso');
+  await p.click('#modal .btn.ghost'); await p.waitForSelector('#modal', { state: 'hidden' });
+  await p.click('#b-pdf'); await p.waitForSelector('#modal:not([hidden])', { timeout: 10000 });
+  ok(/em branco/.test(await p.textContent('#modal h2')), 'vale para o PDF também');
+  ok(await p.evaluate(() => window.PHApp.estado.pendente) === false, 'e o vazio nunca é enviado por cima do que está salvo');
+  await fetch('http://127.0.0.1:8788/__volta');
+  await p.click('#modal .btn');
+  await p.waitForFunction(() => document.querySelector('#i-personagem').value === 'Nadia Corvo', null, { timeout: 30000 });
+  ok(true, 'o botão "Buscar a ficha salva" traz a ficha de volta');
+  const rev = await p.evaluate(() => window.PHApp.estado.rev);
+  ok(rev >= 1, 'e ela volta com a revisão do servidor (v' + rev + ')');
+}
+
 /* ---------- outro aparelho (modo servidor) ---------- */
 if (MODO === 'servidor') {
   const ctx2 = await contexto(); const q = await pagina(ctx2); await q.goto(BASE);
@@ -183,6 +213,51 @@ if (MODO === 'servidor') {
 await p.click('#b-hist'); await p.waitForSelector('#modal .vers li', { timeout: 10000 });
 ok(await p.locator('#modal .vers li').count() >= 1, 'lista versões salvas');
 await p.click('#modal .btn >> text=Fechar');
+
+/* ---------- Narrador: a mesa ---------- */
+await p.click('#b-sair'); await p.waitForSelector('#gate:not([hidden])');
+await p.click('.tabs [data-tab="criar"]');
+await p.fill('#c-usuario', 'caio'); await p.fill('#c-nome', 'Caio'); await p.click('#f-criar .btn');
+await p.waitForSelector('#p-pin:not([hidden])');
+const PIN_CAIO = (await p.textContent('#pin-novo')).trim();
+await p.click('#pin-ok');
+await p.fill('#i-personagem', 'Strauss Vide'); await p.selectOption('#i-raca', 'Punk');
+await p.click('#b-salvar'); await p.waitForFunction(() => /Salvo/.test(document.querySelector('#sync').textContent), null, { timeout: 15000 });
+ok(await p.isHidden('#b-mesa'), 'jogador comum não vê o botão Mesa');
+await p.click('#b-sair'); await p.waitForSelector('#gate:not([hidden])');
+
+/* no modo local o Narrador é a primeira conta do navegador (a ana); no servidor, marcamos na planilha */
+if (MODO === 'servidor') ok((await (await fetch('http://127.0.0.1:8788/__narrador?u=ana_corvo')).text()) === 'ok', 'promove a ana a Narrador na planilha');
+await p.fill('#e-usuario', 'ana_corvo'); await p.fill('#e-pin', PIN); await p.click('#f-entrar .btn');
+await p.waitForSelector('#gate', { state: 'hidden' });
+ok(await p.isVisible('#b-mesa'), 'o Narrador vê o botão Mesa');
+ok(/Narrador/.test(await p.textContent('#who')), 'a barra identifica o Narrador');
+await p.click('#b-mesa'); await p.waitForSelector('#modal .mesa li', { timeout: 15000 });
+ok(await p.locator('#modal .mesa li').count() >= 2, 'a mesa lista as fichas dos jogadores');
+const linhaCaio = p.locator('#modal .mesa li', { hasText: 'Strauss Vide' }).first();
+ok(await linhaCaio.count() === 1, 'a ficha do outro jogador aparece pelo nome do personagem');
+ok((await linhaCaio.locator('.pino').textContent()).trim() === PIN_CAIO, 'a mesa mostra o PIN de cada jogador');
+await linhaCaio.locator('.btn').click();
+await p.waitForSelector('#narrando:not([hidden])', { timeout: 15000 });
+ok(/Caio/.test(await p.textContent('#narrando-txt')), 'avisa de quem é a ficha aberta');
+ok(await p.inputValue('#i-personagem') === 'Strauss Vide', 'o Narrador abre a ficha do jogador');
+await p.fill('#i-idade', '40');
+await p.click('#b-salvar'); await p.waitForFunction(() => /Salvo/.test(document.querySelector('#sync').textContent), null, { timeout: 15000 });
+await p.click('#b-voltar-minha');
+await p.waitForFunction(() => document.querySelector('#i-personagem').value === 'Nadia Corvo', null, { timeout: 15000 });
+ok(await p.isHidden('#narrando'), 'voltar à própria ficha fecha o aviso');
+ok(await p.inputValue('#i-jogador') === 'Ana', 'e a ficha do Narrador volta intacta');
+await p.click('#b-sair'); await p.waitForSelector('#gate:not([hidden])');
+await p.fill('#e-usuario', 'caio'); await p.fill('#e-pin', PIN_CAIO); await p.click('#f-entrar .btn');
+await p.waitForSelector('#gate', { state: 'hidden' });
+ok(await p.inputValue('#i-idade') === '40', 'o jogador encontra a alteração feita pelo Narrador');
+ok(await p.inputValue('#i-jogador') === 'Caio', 'e a ficha continua sendo dele');
+await p.click('#b-hist'); await p.waitForSelector('#modal .vers li', { timeout: 15000 });
+ok(await p.locator('#modal .vers li').count() >= 2, 'a edição do Narrador virou uma versão no histórico do jogador');
+await p.click('#modal .btn >> text=Fechar');
+await p.click('#b-sair'); await p.waitForSelector('#gate:not([hidden])');
+await p.fill('#e-usuario', 'ana_corvo'); await p.fill('#e-pin', PIN); await p.click('#f-entrar .btn');
+await p.waitForSelector('#gate', { state: 'hidden' });
 
 /* ---------- sair, recuperar, entrar, bloquear ---------- */
 await p.click('#b-sair'); await p.waitForSelector('#gate:not([hidden])');

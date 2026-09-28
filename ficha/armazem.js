@@ -34,8 +34,11 @@
         if (!/^[a-z][a-z0-9_.-]{2,23}$/.test(u)) return { ok: false, erro: 'Usuário: de 3 a 24 caracteres, começando com letra; só letras sem acento, números, ponto, hífen ou sublinhado.' };
         if (!/^[A-Za-zÀ-ÖØ-öø-ÿ'-]{1,30}$/.test(String(p.nome || '').trim())) return { ok: false, erro: 'Nome: só o primeiro nome, sem espaços nem números.' };
         if (contas[u]) return { ok: false, erro: 'Esse usuário já existe neste aparelho. Escolha outro.' };
-        var pin = pin4(); contas[u] = { nome: String(p.nome).trim(), pin: pin, falhas: 0, bloq: 0 }; gravar(LC, contas);
-        return { ok: true, usuario: u, nome: contas[u].nome, pin: pin, token: novaSessao(u), rev: 0, ficha: null };
+        /* No modo local não há planilha para marcar quem é o Narrador, então vale uma regra simples:
+           a primeira ficha criada neste navegador é a dele. */
+        var papelNovo = Object.keys(contas).length === 0 ? 'narrador' : '';
+        var pin = pin4(); contas[u] = { nome: String(p.nome).trim(), pin: pin, falhas: 0, bloq: 0, papel: papelNovo }; gravar(LC, contas);
+        return { ok: true, usuario: u, nome: contas[u].nome, pin: pin, token: novaSessao(u), rev: 0, ficha: null, papel: papelNovo };
       case 'entrar':
         var c = contas[u];
         if (!c) return { ok: false, erro: 'Usuário ou PIN incorretos.' };
@@ -46,16 +49,36 @@
         }
         c.falhas = 0; gravar(LC, contas);
         var f = ler(LF + u);
-        return { ok: true, usuario: u, nome: c.nome, token: novaSessao(u), rev: f ? f.rev : 0, ficha: f ? f.ficha : null };
+        return { ok: true, usuario: u, nome: c.nome, token: novaSessao(u), rev: f ? f.rev : 0, ficha: f ? f.ficha : null, papel: c.papel || '' };
       case 'recuperar':
         var alvo = norm(p.personagem), achados = [];
         Object.keys(contas).forEach(function (us) { var fx = ler(LF + us); if (fx && fx.ficha && norm(fx.ficha.id && fx.ficha.id.personagem) === alvo && fx.ficha.raca === p.raca) achados.push({ usuario: us, nome: contas[us].nome, pin: contas[us].pin }); });
         return achados.length ? { ok: true, contas: achados } : { ok: false, erro: 'Nenhuma ficha salva com esse personagem e essa raça. Confira a grafia do nome.' };
     }
     if (!sessaoOk()) return { ok: false, sessao: false, erro: 'Sessão expirada. Entre de novo com o seu PIN.' };
+
+    /* Mesmo desenho do servidor: o Narrador pode apontar a ação para a ficha de outro jogador. */
+    var narrador = (contas[u] || {}).papel === 'narrador';
+    var pedido = String(p.alvo || '').trim().toLowerCase(), narrando = false;
+    if (pedido && pedido !== u) {
+      if (!narrador) return { ok: false, erro: 'Só o Narrador pode abrir a ficha de outro jogador.' };
+      if (!contas[pedido]) return { ok: false, erro: 'Não existe jogador com esse usuário.' };
+      u = pedido; narrando = true;
+    }
+    if (p.acao === 'mesa') {
+      if (!narrador) return { ok: false, erro: 'Esta área é do Narrador.' };
+      return { ok: true, jogadores: Object.keys(contas).map(function (us) {
+        var fx = ler(LF + us) || {};
+        return { usuario: us, nome: contas[us].nome, pin: contas[us].pin, papel: contas[us].papel || '',
+                 criado: '', ultimoAcesso: '', bloqueado: (contas[us].bloq || 0) > agora,
+                 personagem: fx.personagem || '', raca: fx.raca || '', rev: fx.rev || 0,
+                 atualizado: (ler(LH + us) || []).slice(-1).map(function (h) { return h.quando; })[0] || '' };
+      }) };
+    }
+
     var atual = ler(LF + u), hist = ler(LH + u) || [];
     switch (p.acao) {
-      case 'carregar': return { ok: true, rev: atual ? atual.rev : 0, ficha: atual ? atual.ficha : null };
+      case 'carregar': return { ok: true, rev: atual ? atual.rev : 0, ficha: atual ? atual.ficha : null, alvo: narrando ? u : '' };
       case 'salvar':
         var rv = atual ? atual.rev : 0;
         if (Number(p.rev || 0) !== rv && !p.forcar) return { ok: false, conflito: true, rev: rv, ficha: atual && atual.ficha, erro: 'Esta ficha foi salva em outra aba depois da sua última leitura.' };
@@ -63,12 +86,12 @@
         var nf = { rev: rv + 1, ficha: p.ficha, personagem: (p.ficha.id && p.ficha.id.personagem) || '', raca: p.ficha.raca || '' };
         gravar(LF + u, nf);
         var ult = hist.length ? Date.parse(hist[hist.length - 1].quando) : 0;
-        if (p.marco || !atual || atual.personagem !== nf.personagem || atual.raca !== nf.raca || agora - ult > 5 * 60000) {
+        if (narrando || p.marco || !atual || atual.personagem !== nf.personagem || atual.raca !== nf.raca || agora - ult > 5 * 60000) {
           hist.push({ rev: nf.rev, quando: new Date(agora).toISOString(), personagem: nf.personagem, raca: nf.raca, ficha: p.ficha });
         }
         if (hist.length > 60) hist = hist.slice(-60);           // o navegador tem pouco espaço; no servidor não há corte
         gravar(LH + u, hist);
-        return { ok: true, rev: nf.rev };
+        return { ok: true, rev: nf.rev, alvo: narrando ? u : '' };
       case 'historico': return { ok: true, versoes: hist.slice().reverse().map(function (h) { return { rev: h.rev, quando: h.quando, personagem: h.personagem, raca: h.raca }; }) };
       case 'versao': var h = hist.filter(function (x) { return x.rev === Number(p.rev); }).pop(); return h ? { ok: true, rev: h.rev, ficha: h.ficha } : { ok: false, erro: 'Versão não encontrada.' };
       case 'sair': var ss = ler(LS) || {}; delete ss[p.token]; gravar(LS, ss); return { ok: true };

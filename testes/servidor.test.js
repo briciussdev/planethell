@@ -116,5 +116,38 @@ const lin = W.abas.Fichas.linhas.find(l => l[0] === 'bruno');
 ok(String(lin[3]).startsWith("'=") && lin.slice(6).every(c => c === '' || String(c).startsWith('~')), 'nomes e pedaços nunca viram fórmula na planilha');
 ok(C({ acao: 'carregar', usuario: 'bruno', token: r.token }).ficha.id.personagem === '=IMPORTXML("http://x")', 'e a ficha volta idêntica');
 ok(C({ acao: 'recuperar', personagem: '=IMPORTXML("http://x")', raca: 'Punk' }).ok, 'recuperação funciona com nome começando por =');
+// ---------------------------------------------------------------- Narrador
+const pinBruno = W.abas.Contas.linhas.find(l => l[0] === 'bruno')[2].replace(/^'/, '');
+W.abas.Contas.linhas.find(l => l[0] === 'bruno')[7] = 'narrador';   // é assim que você promove: uma palavra na planilha
+let n = C({ acao: 'entrar', usuario: 'bruno', pin: pinBruno });
+const tn = n.token;
+ok(n.ok && n.papel === 'narrador', 'entrar avisa que a conta é de Narrador');
+ok(C({ acao: 'entrar', usuario: 'ana_01', pin }).papel === '', 'e que a do jogador comum não é');
+const tAna = C({ acao: 'entrar', usuario: 'ana_01', pin }).token;
+let m = C({ acao: 'mesa', usuario: 'bruno', token: tn });
+ok(m.ok && m.jogadores.length >= 2, 'a mesa lista todas as contas');
+const naMesa = m.jogadores.find(j => j.usuario === 'ana_01');
+ok(naMesa && naMesa.pin === pin && naMesa.personagem === 'Nadia Corvo' && naMesa.raca === 'Cyberpunk', 'a mesa traz personagem, raça e PIN de cada jogador');
+ok(!C({ acao: 'mesa', usuario: 'ana_01', token: tAna }).ok, 'jogador comum não abre a mesa');
+ok(!C({ acao: 'mesa', usuario: 'bruno', token: 'falso' }).ok, 'a mesa exige sessão válida');
+ok(!C({ acao: 'carregar', usuario: 'ana_01', token: tAna, alvo: 'bruno' }).ok, 'jogador comum não abre a ficha de outro');
+ok(!C({ acao: 'salvar', usuario: 'ana_01', token: tAna, alvo: 'bruno', rev: 0, ficha }).ok, 'nem salva na ficha de outro');
+const cargaN = C({ acao: 'carregar', usuario: 'bruno', token: tn, alvo: 'ana_01' });
+ok(cargaN.ok && cargaN.ficha.id.personagem === 'Nadia Corvo' && cargaN.alvo === 'ana_01', 'Narrador abre a ficha do jogador');
+ok(!C({ acao: 'carregar', usuario: 'bruno', token: tn, alvo: 'ninguem' }).ok, 'alvo inexistente é recusado');
+const histAna = W.abas.Historico.linhas.filter(l => l[0] === 'ana_01').length;
+const sv = C({ acao: 'salvar', usuario: 'bruno', token: tn, alvo: 'ana_01', rev: cargaN.rev, ficha: Object.assign({}, cargaN.ficha, { xp: { total: 50, log: [] } }) });
+ok(sv.ok && sv.rev === cargaN.rev + 1 && sv.alvo === 'ana_01', 'Narrador salva na ficha do jogador');
+ok(W.abas.Historico.linhas.filter(l => l[0] === 'ana_01').length === histAna + 1, 'todo salvamento do Narrador guarda uma cópia no histórico daquela ficha');
+ok(C({ acao: 'carregar', usuario: 'ana_01', token: tAna }).ficha.xp.total === 50, 'o jogador encontra a alteração do Narrador na própria ficha');
+ok(C({ acao: 'historico', usuario: 'bruno', token: tn, alvo: 'ana_01' }).versoes.length >= 1, 'Narrador vê o histórico do jogador');
+ok(C({ acao: 'versao', usuario: 'bruno', token: tn, alvo: 'ana_01', rev: cargaN.rev }).ok, 'e consegue abrir uma versão antiga dela');
+ok(W.abas.Registro.linhas.some(l => l[1] === 'narrador-abrir' && l[2] === 'bruno'), 'a planilha registra cada ficha que o Narrador abriu');
+ok(W.abas.Registro.linhas.some(l => l[1] === 'narrador-salvar' && String(l[3]).indexOf('ana_01') >= 0), 'e cada salvamento dele, com o nome do jogador');
+ok(W.abas.Registro.linhas.some(l => l[1] === 'mesa'), 'e cada vez que ele abriu a mesa');
+const minha = C({ acao: 'carregar', usuario: 'bruno', token: tn });
+ok(minha.ok && minha.alvo === '' && (!minha.ficha || minha.ficha.id.personagem !== 'Nadia Corvo'), 'sem alvo, o Narrador volta para a própria ficha');
+ok(C({ acao: 'salvar', usuario: 'bruno', token: tn, alvo: 'bruno', rev: minha.rev, ficha }).ok, 'apontar o alvo para si mesmo é o mesmo que não apontar');
+
 console.log((total - falhou) + ' de ' + total + ' testes passaram.');
 process.exit(falhou ? 1 : 0);

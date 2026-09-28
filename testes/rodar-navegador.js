@@ -12,5 +12,6 @@ const back = spawn(process.execPath, [path.join(__dirname, 'servidor-simulado.js
 function rodar(modo) { return new Promise(ok => spawn(process.execPath, [path.join(__dirname, 'navegador.test.mjs'), modo], { stdio: 'inherit' }).on('exit', ok)); }
 setTimeout(async () => {
   const a = await rodar('local'), b = await rodar('servidor');
-  back.kill(); site.close(); process.exit(a || b ? 1 : 0);
+  const c = await new Promise(ok => spawn(process.execPath, [path.join(__dirname, 'resgate.test.mjs')], { stdio: 'inherit' }).on('exit', ok));
+  back.kill(); site.close(); process.exit(a || b || c ? 1 : 0);
 }, 600);

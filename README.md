@@ -35,6 +35,10 @@ testes/                  testes automatizados
 
 Sem o passo 2 abaixo a ficha já funciona, em **modo local**: cada jogador guarda a ficha no próprio navegador, com usuário e PIN, mas ela não passa de um aparelho para outro.
 
+> **Atenção ao modo local.** Nesse modo não existe cópia em servidor nenhum: se o jogador limpar o navegador, usar aba anônima ou trocar de aparelho, a ficha some e não há de onde recuperar. Ele é bom para experimentar; para uma crônica de verdade, faça o passo 2.
+>
+> **Se a sua mesa já jogou em modo local e você vai ligar a planilha agora**, cada jogador deve, **antes** da troca, abrir `…/ficha/resgate.html` no mesmo navegador de sempre e baixar o `.json` da ficha. Depois da troca, é só criar a conta e usar **Arquivo → Carregar .json**. A página de resgate continua funcionando depois da troca, desde que o navegador não tenha sido limpo.
+
 ---
 
 ## 2. Banco de dados: as fichas numa Planilha Google
@@ -63,11 +67,11 @@ As fichas ficam numa planilha da **sua** conta Google. Um pequeno programa (Goog
 
 | Aba | Conteúdo |
 | --- | --- |
-| Contas | usuário, primeiro nome, PIN, data de criação, último acesso, tentativas erradas |
+| Contas | usuário, primeiro nome, PIN, data de criação, último acesso, tentativas erradas, **papel** |
 | Sessoes | sessões abertas (só o *hash* do token, nunca o token) |
 | Fichas | a versão atual de cada ficha |
 | Historico | cópias inteiras de versões anteriores |
-| Registro | criações de conta, entradas, bloqueios e **toda recuperação de PIN**, com data |
+| Registro | criações de conta, entradas, bloqueios, **toda recuperação de PIN** e tudo o que o Narrador abriu ou salvou, com data |
 
 ### Nada é apagado
 
@@ -79,7 +83,31 @@ As fichas ficam numa planilha da **sua** conta Google. Um pequeno programa (Goog
 
 ---
 
-## 3. Segurança: o que protege e o que não protege
+## 3. O Narrador e a mesa
+
+O Narrador entra no site como qualquer jogador, com usuário e PIN, e ganha um botão **Mesa** na barra de cima.
+
+**Como promover alguém.** Na planilha, aba **Contas**, ache a linha do usuário e escreva `narrador` na coluna **papel**. Só isso, e vale a partir do próximo login. Quem pode fazer isso é quem tem a planilha, ou seja, você. Dá para ter mais de um Narrador. Para tirar o papel, apague a palavra.
+
+> Se a sua planilha é anterior a esta versão, a coluna **papel** ainda não existe: rode a função `instalar` de novo no editor do Apps Script (**Executar**). Ela só acrescenta a coluna que falta e não toca em nenhuma ficha.
+
+**O que o botão Mesa mostra.** Uma linha por conta, com o nome do personagem, a raça, o jogador, quando a ficha foi editada pela última vez e o **PIN** — útil quando alguém trava na hora da sessão. Fichas ainda em branco aparecem como "sem personagem".
+
+**Abrir a ficha de um jogador.** Clique em *Abrir*. A ficha dele carrega no lugar da sua, com uma tarja âmbar avisando de quem ela é, e o Narrador pode editar tudo: XP, Moralidade, Manchas, Despertar, dano, o que for. O botão *Voltar à minha ficha* desfaz a troca.
+
+**Com que cuidado isso é feito.**
+
+- **Cada salvamento do Narrador guarda uma cópia inteira no histórico daquela ficha.** Se ele errar a mão, o jogador volta a versão anterior pelo botão *Versões*.
+- A aba *Registro* anota cada ficha aberta (`narrador-abrir`), cada salvamento (`narrador-salvar`, com o nome do jogador) e cada abertura da mesa (`mesa`).
+- O nome do jogador na ficha não é sobrescrito quando o Narrador edita.
+- Se o jogador estiver com a ficha aberta ao mesmo tempo, vale a mesma regra de sempre: quem salvar depois recebe o aviso de conflito, e nenhuma das versões se perde.
+- Jogador comum não enxerga o botão Mesa nem consegue abrir a ficha de ninguém — o servidor recusa, não é só a tela que esconde.
+
+No **modo local** (sem planilha configurada), não há onde marcar o papel, então vale uma regra simples: a **primeira ficha criada naquele navegador** é a do Narrador, e ele vê as outras fichas daquele mesmo navegador.
+
+---
+
+## 4. Segurança: o que protege e o que não protege
 
 O login foi pensado para ser simples, sem e-mail. Isto é o que ele faz:
 
@@ -93,12 +121,32 @@ E isto é o que ele **não** protege, por decisão de projeto:
 
 - **A recuperação de PIN usa só o nome do personagem e a raça.** Qualquer pessoa que saiba esses dois — e na mesa todo mundo sabe — consegue ver o usuário e o PIN de outro jogador. Para limitar o estrago: são no máximo 5 recuperações por personagem por hora, **toda recuperação fica registrada na aba *Registro*** com data e hora, e qualquer edição indevida pode ser desfeita pelas versões. Se isso incomodar, dá para exigir também o usuário na recuperação: é uma linha em `recuperar_` no `Code.gs` e outra em `armazem.js`.
 - **O PIN fica guardado como texto na planilha**, porque a recuperação precisa mostrá-lo. Só o dono da planilha vê. Por isso mesmo ele é gerado pelo sistema.
+- **O Narrador vê os PINs de todo mundo** na tela da Mesa. É de propósito (ele já veria na planilha), mas significa que promover alguém a Narrador é entregar a chave das fichas da mesa.
 - É uma ficha de jogo. **Não peça nem guarde dados pessoais nela** além do primeiro nome.
 - O Apps Script gratuito aguenta com folga um grupo de jogo. Não foi feito para centenas de pessoas salvando ao mesmo tempo.
 
 ---
 
-## 4. Exportar
+## 5. Se a ficha de alguém aparecer em branco
+
+Acontece quando **aquele aparelho** perdeu a cópia local: limpeza do navegador, aba anônima, espaço esgotado, ou o iPhone descartando os dados do site depois de semanas sem uso. **Os dados não se perdem por isso** — eles estão na planilha.
+
+O que a ficha faz hoje, sozinha:
+
+- Ao abrir sem a cópia local, ela busca a versão do servidor e continua de onde parou, sem perguntar nada.
+- Uma ficha em branco nunca é enviada por cima da que está salva.
+- Os botões **Excel / Sheets**, **PDF** e **Arquivo** se recusam a gerar um arquivo vazio: aparece um aviso com o botão *Buscar a ficha salva*.
+
+Se ainda assim alguém estiver vendo uma ficha vazia:
+
+1. Confira a internet do aparelho e recarregue a página. Sem servidor, não há de onde buscar.
+2. Clique em **Versões** e restaure a última. Nada é apagado, então a ficha inteira está lá.
+3. Você, como Narrador, pode abrir a ficha dele pela **Mesa** e conferir o que está salvo — o que você vê ali é o que existe no servidor.
+4. Se a mesa jogou em **modo local** antes, peça para ele abrir `…/ficha/resgate.html` no navegador de sempre: a ficha antiga pode estar guardada ali, e a página baixa como `.json` para ser carregado na conta nova.
+
+---
+
+## 6. Exportar
 
 - **Excel / Sheets**: baixa uma planilha `.xlsx` no visual da ficha (preto, verde, Orbitron), com fórmulas nos derivados. Para usar no Google Sheets: Google Drive → **Novo → Upload de arquivo**, depois abra com o Planilhas Google.
 - **PDF**: abre a impressão do navegador com uma folha própria (fundo branco, economiza tinta). Escolha **Salvar como PDF**.
@@ -106,7 +154,7 @@ E isto é o que ele **não** protege, por decisão de projeto:
 
 ---
 
-## 5. Mudar o guia
+## 7. Mudar o guia
 
 1. Edite `guia/guia-do-jogador.md`.
 2. Regere os dados da ficha e a landing page:
@@ -117,7 +165,7 @@ E isto é o que ele **não** protege, por decisão de projeto:
    ```
 3. Rode os testes (abaixo) e envie.
 
-## 6. Testes
+## 8. Testes
 
 ```sh
 npm install
@@ -128,8 +176,9 @@ npm test
 São três baterias:
 
 - **`testes/regras.test.js`**: o motor de regras contra o guia. Cria a Nadia Corvo do passo a passo da seção 10 e confere derivados, verificação de criação, afinidades, Quirks, XP, dados, escada e dano.
-- **`testes/servidor.test.js`**: roda o `Code.gs` com uma planilha simulada. Cobre contas, PIN, bloqueio, sessões, conflito entre aparelhos, histórico, fichas grandes, injeção de fórmula e a ausência de qualquer operação de apagar.
-- **`testes/navegador.test.mjs`**: preenche a ficha clicando, nos dois modos (local e servidor). Cobre criar conta, montar a Nadia, conferir os cálculos, rolar, gastar XP, salvar, recarregar, trocar de aparelho, conflito, queda de conexão, recuperar o PIN, bloqueio, exportar `.xlsx` e PDF, e o layout no celular.
+- **`testes/servidor.test.js`**: roda o `Code.gs` com uma planilha simulada. Cobre contas, PIN, bloqueio, sessões, conflito entre aparelhos, histórico, fichas grandes, injeção de fórmula, o acesso do Narrador (e a recusa a quem não é) e a ausência de qualquer operação de apagar.
+- **`testes/resgate.test.mjs`**: monta uma ficha em modo local, troca o site para o modo servidor e confere que a página de resgate ainda acha a ficha antiga, baixa o `.json` e ele entra inteiro numa conta nova.
+- **`testes/navegador.test.mjs`**: preenche a ficha clicando, nos dois modos (local e servidor). Cobre criar conta, montar a Nadia, conferir os cálculos, rolar, gastar XP, salvar, recarregar, trocar de aparelho, conflito, queda de conexão, recuperar o PIN, bloqueio, a Mesa do Narrador (abrir a ficha de outro jogador, editar e o jogador receber a alteração), a perda da cópia local (a ficha volta do servidor e o download não sai vazio), exportar `.xlsx` e PDF, e o layout no celular.
 
 ---
 

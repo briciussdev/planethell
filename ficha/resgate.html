@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Resgate de fichas — PlanetHell</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap">
+<link rel="stylesheet" href="ficha.css">
+<style>
+  .resgate{max-width:820px;margin:24px auto 60px;padding-inline:16px}
+  .resgate h1{font-family:var(--hud);color:var(--g);font-size:22px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 6px}
+  .resgate .lede{color:var(--muted);font-size:14px;margin:0 0 18px;max-width:64ch}
+  .achados{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:10px}
+  .achados li{border:1px solid rgba(0,255,0,.18);background:var(--panel2);padding:12px 14px;display:grid;
+    grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
+  .achados .pers{font-family:var(--hud);font-size:15px;color:var(--g);letter-spacing:.04em}
+  .achados .sub{display:block;font-family:var(--read);font-size:12.5px;color:var(--muted);letter-spacing:0;margin-top:3px}
+  .achados .acts{display:flex;gap:6px;flex-wrap:wrap}
+  .aviso{border:1px solid rgba(255,176,0,.45);color:var(--amber);padding:10px 12px;font-size:13.5px;margin:16px 0}
+  .passos{font-size:14px;color:var(--text);line-height:1.6;padding-left:20px}
+  .passos li{margin:6px 0}
+  .voltar{display:inline-block;margin-top:22px;font-family:var(--hud);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+  @media (max-width:560px){.achados li{grid-template-columns:minmax(0,1fr)}}
+</style>
+</head>
+<body>
+<div class="resgate">
+  <h1>Resgate de fichas</h1>
+  <p class="lede">Esta página procura fichas guardadas <b>neste navegador</b> — as que foram salvas antes de o site passar a usar a planilha do Narrador. Ela só lê: não apaga nem altera nada.</p>
+
+  <div id="saida"></div>
+
+  <div class="hud" style="padding:12px 14px;margin-top:22px">
+    <p style="font-family:var(--hud);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--g-dim);margin:0 0 8px">O que fazer com o arquivo</p>
+    <ol class="passos">
+      <li>Baixe o <code>.json</code> da sua ficha aqui.</li>
+      <li>Abra a ficha normalmente e crie a sua conta (usuário e PIN).</li>
+      <li>Na barra de cima, clique em <b>Arquivo</b> e depois em <b>Carregar .json</b>.</li>
+      <li>Escolha o arquivo baixado. A ficha volta inteira e passa a ficar salva no servidor.</li>
+    </ol>
+  </div>
+
+  <a class="voltar" href="./">← Voltar para a ficha</a>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var saida = document.getElementById('saida');
+  function el(t, a, kids) {
+    var e = document.createElement(t);
+    if (a) Object.keys(a).forEach(function (k) {
+      if (k === 'text') e.textContent = a[k];
+      else if (k === 'on') Object.keys(a[k]).forEach(function (ev) { e.addEventListener(ev, a[k][ev]); });
+      else if (k === 'class') e.className = a[k];
+      else e.setAttribute(k, a[k]);
+    });
+    (kids || []).forEach(function (c) { if (c != null) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return e;
+  }
+  function ler(k) { try { var v = localStorage.getItem(k); return v == null ? null : JSON.parse(v); } catch (e) { return null; } }
+  function nomeArquivo(ficha, sufixo) {
+    var n = ((ficha && ficha.id && ficha.id.personagem) || 'ficha').normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'ficha';
+    return 'PlanetHell-' + n + (sufixo || '') + '.json';
+  }
+  function baixar(obj, nome) {
+    var blob = new Blob([JSON.stringify(obj, null, 1)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = nome; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 1500);
+  }
+  function quando(t) { try { return new Date(t).toLocaleString('pt-BR'); } catch (e) { return ''; } }
+
+  /* Junta tudo o que este navegador guardou: as contas do modo local, as fichas, o histórico
+     e também a cópia que a ficha mantém no aparelho quando trabalha com servidor. */
+  function procurar() {
+    var achados = {}, chaves = [];
+    try { for (var i = 0; i < localStorage.length; i++) chaves.push(localStorage.key(i)); } catch (e) { return null; }
+    var contas = ler('ph.local.contas') || {};
+
+    function guardar(usuario, ficha, origem, rev, data) {
+      if (!ficha || typeof ficha !== 'object' || !ficha.atr) return;
+      var a = achados[usuario] || (achados[usuario] = { usuario: usuario, nome: (contas[usuario] || {}).nome || '', ficha: null, origem: '', rev: 0, data: 0, versoes: [] });
+      if (!a.ficha || (rev || 0) >= a.rev) { a.ficha = ficha; a.origem = origem; a.rev = rev || 0; a.data = data || a.data; }
+    }
+
+    chaves.forEach(function (k) {
+      var v;
+      if (k.indexOf('ph.local.ficha.') === 0) { v = ler(k); if (v) guardar(k.slice(15), v.ficha, 'salva neste navegador', v.rev, 0); }
+      else if (k.indexOf('ph.copia.') === 0) { v = ler(k); if (v) guardar(k.slice(9), v.ficha, 'cópia guardada no aparelho', v.rev, v.quando); }
+    });
+    chaves.forEach(function (k) {
+      if (k.indexOf('ph.local.hist.') !== 0) return;
+      var u = k.slice(14), lista = ler(k) || [];
+      if (!achados[u] && lista.length) guardar(u, lista[lista.length - 1].ficha, 'versão antiga', lista[lista.length - 1].rev, 0);
+      if (achados[u]) achados[u].versoes = lista.filter(function (h) { return h && h.ficha; });
+    });
+    return Object.keys(achados).map(function (u) { return achados[u]; });
+  }
+
+  var lista = procurar();
+
+  if (lista === null) {
+    saida.appendChild(el('p', { class: 'aviso', text: 'Este navegador não deixa ler o que está guardado (aba anônima ou dados de sites bloqueados). Abra esta página na janela normal, no mesmo navegador em que você preenchia a ficha.' }));
+    return;
+  }
+  if (!lista.length) {
+    saida.appendChild(el('p', { class: 'aviso', text: 'Nenhuma ficha encontrada neste navegador. Tente no aparelho e no navegador em que você preenchia a ficha — os dados ficam em cada aparelho, e não viajam entre eles.' }));
+    return;
+  }
+
+  saida.appendChild(el('p', { style: 'font-family:var(--hud);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--g-dim)',
+    text: lista.length === 1 ? '1 ficha encontrada' : lista.length + ' fichas encontradas' }));
+
+  var ul = el('ul', { class: 'achados' });
+  lista.forEach(function (a) {
+    var f = a.ficha, pers = (f.id && f.id.personagem) || '';
+    var partes = [a.nome || a.usuario, a.usuario, f.raca || 'sem raça', a.origem];
+    if (a.data) partes.push('em ' + quando(a.data));
+    if (a.versoes.length) partes.push(a.versoes.length + ' versão(ões) anterior(es) guardada(s)');
+    var acts = el('span', { class: 'acts' }, [
+      el('button', { class: 'btn small', type: 'button', text: 'Baixar .json',
+        on: { click: function () { baixar({ app: 'PlanetHell', versao: 1, exportado: new Date().toISOString(), ficha: f }, nomeArquivo(f)); } } })
+    ]);
+    if (a.versoes.length) acts.appendChild(el('button', { class: 'btn ghost small', type: 'button', text: 'Versões anteriores',
+      on: { click: function () { baixar({ app: 'PlanetHell', versao: 1, exportado: new Date().toISOString(), versoes: a.versoes }, nomeArquivo(f, '-versoes')); } } }));
+    ul.appendChild(el('li', {}, [
+      el('span', {}, [el('span', { class: 'pers', text: pers || 'sem personagem' }), el('span', { class: 'sub', text: partes.filter(Boolean).join(' · ') })]),
+      acts
+    ]));
+  });
+  saida.appendChild(ul);
+
+  if (lista.length > 1) saida.appendChild(el('p', { style: 'margin-top:12px' }, [
+    el('button', { class: 'btn ghost small', type: 'button', text: 'Baixar todas de uma vez',
+      on: { click: function () { baixar({ app: 'PlanetHell', versao: 1, exportado: new Date().toISOString(),
+        fichas: lista.map(function (a) { return { usuario: a.usuario, nome: a.nome, ficha: a.ficha }; }) }, 'PlanetHell-fichas-deste-navegador.json'); } } })
+  ]));
+})();
+</script>
+</body>
+</html>

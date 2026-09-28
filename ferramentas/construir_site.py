@@ -63,10 +63,10 @@ R=[
  ('nefilin','nefilin.webp','object-position:26% 34%','Nefilin de asas abertas atravessando um templo de mármore branco.','Nefilin','T4','milênios · Quirk',
   ('Law of the Son','num Colapso, proteja o mais fraco contra o mais poderoso. Recusar custa 1 agravado'),('Legacy','isto precisa ser lembrado'),
   [('Fallen Angel','asas ocultáveis e voo pleno'),('Untainted','imune a degeneração por defeitos')]),
- ('youkai','youkai.webp','','Youkai de chifres fumando na calçada, neon vermelho ao fundo.','Youkai','T4','não envelhece',
+ ('youkai','youkai.webp','','Youkai de chifres e cauda num campo de batalha em chamas.','Youkai','T4','não envelhece',
   ('Hole in My Soul','Domains sagrados, Quirks purificadoras e Magitek causam sempre agravado, com Perfuração 1'),('In Love With Judas','isto pode piorar, e você sabe como'),
   [('Sympathy for the Devil',''),('Touch My Body',''),('Bad to the Bone','')]),
- ('hanyou','hanyou.webp','','Han\'you de chifres e cauda num campo de batalha em chamas.',"Han'you",'T3','100–700 anos · Quirk',
+ ('hanyou','hanyou.webp','','Han\'you de chifres fumando na calçada, neon vermelho ao fundo.',"Han'you",'T3','100–700 anos · Quirk',
   ('Maleficent','quanto menor a Moralidade, mais forte e menos humano. Nunca passa de 7'),('Appetite','consumir algo de alguém que está aqui'),
   [('Devilicious','cura ao ferir'),('Sensual Seduction',''),('V of Violence','')]),
 ]

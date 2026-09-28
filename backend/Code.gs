@@ -14,6 +14,9 @@
  * - NADA É APAGADO. Não existe ação de excluir. Cada salvamento atualiza a aba "Fichas" e,
  *   de tempos em tempos, guarda uma cópia inteira na aba "Historico". Salvar por cima de uma versão
  *   mais nova é recusado (conflito), a menos que o jogador confirme.
+ * - NARRADOR: quem tiver a palavra "narrador" na coluna "papel" da aba Contas enxerga a mesa inteira,
+ *   abre e edita a ficha de qualquer jogador e vê os PINs. Toda abertura e todo salvamento feitos por ele
+ *   ficam na aba "Registro", e cada salvamento do Narrador guarda uma cópia no Histórico, para dar para voltar.
  */
 
 var CONFIG = {
@@ -30,7 +33,7 @@ var CONFIG = {
 };
 
 var ABAS = {
-  Contas:    ['usuario', 'nome', 'pin', 'criado', 'ultimoAcesso', 'falhas', 'bloqueadoAte'],
+  Contas:    ['usuario', 'nome', 'pin', 'criado', 'ultimoAcesso', 'falhas', 'bloqueadoAte', 'papel'],
   Sessoes:   ['hash', 'usuario', 'criada', 'expira'],
   Fichas:    ['usuario', 'rev', 'atualizado', 'personagem', 'raca', 'partes', 'json'],
   Historico: ['usuario', 'rev', 'quando', 'personagem', 'raca', 'partes', 'json'],
@@ -67,15 +70,19 @@ function rotear_(p) {
     case 'historico': return comSessao_(p, historico_);
     case 'versao':    return comSessao_(p, versao_);
     case 'sair':      return comSessao_(p, sair_);
+    case 'mesa':      return comSessao_(p, mesa_);
     case 'recuperar': return recuperar_(p);
     default:          return { ok: false, erro: 'Ação desconhecida.' };
   }
 }
 
-/* Rode uma vez pelo editor do Apps Script para criar as abas. Nunca apaga nada que já exista. */
+/* Rode uma vez pelo editor do Apps Script para criar as abas. Nunca apaga nada que já exista.
+   Rodar de novo é seguro: só completa cabeçalhos que faltarem (é assim que a coluna "papel" aparece
+   numa planilha criada antes do painel do Narrador). */
 function instalar() {
   Object.keys(ABAS).forEach(function (n) { aba_(n); });
-  return 'Abas prontas: ' + Object.keys(ABAS).join(', ');
+  return 'Abas prontas: ' + Object.keys(ABAS).join(', ') +
+         '. Para virar Narrador, escreva narrador na coluna "papel" da aba Contas, na linha do seu usuário.';
 }
 
 /* ------------------------------------------------------------------ contas */
@@ -89,10 +96,10 @@ function criar_(p) {
   if (linha_('Contas', 0, usuario)) return { ok: false, erro: 'Esse usuário já existe. Escolha outro.' };
   var pin = novoPin_();
   var agora = new Date();
-  aba_('Contas').appendRow([usuario, nome, "'" + pin, agora, agora, 0, '']);
+  aba_('Contas').appendRow([usuario, nome, "'" + pin, agora, agora, 0, '', '']);
   registrar_('criar', usuario, '');
   var token = novaSessao_(usuario);
-  return { ok: true, usuario: usuario, nome: nome, pin: pin, token: token, rev: 0, ficha: null };
+  return { ok: true, usuario: usuario, nome: nome, pin: pin, token: token, rev: 0, ficha: null, papel: '' };
 }
 
 function entrar_(p) {
@@ -117,7 +124,8 @@ function entrar_(p) {
   var token = novaSessao_(usuario);
   var f = lerFicha_('Fichas', usuario);
   registrar_('entrar', usuario, '');
-  return { ok: true, usuario: usuario, nome: v[1], token: token, rev: f ? f.rev : 0, ficha: f ? f.ficha : null };
+  return { ok: true, usuario: usuario, nome: v[1], token: token, rev: f ? f.rev : 0, ficha: f ? f.ficha : null,
+           papel: papel_(v) };
 }
 
 function recuperar_(p) {
@@ -139,12 +147,62 @@ function recuperar_(p) {
 
 /* ------------------------------------------------------------------ fichas */
 
+/* Quando a sessão é de um Narrador, ele pode pedir a ficha de outro jogador pelo campo `alvo`.
+   Para todos os outros, `alvo` é ignorado: cada um só mexe na própria ficha. */
+function alvo_(p, usuario) {
+  var a = normUsuario_(p.alvo);
+  if (!a || a === usuario) return { usuario: usuario, narrando: false };
+  if (!ehNarrador_(usuario)) return { erro: 'Só o Narrador pode abrir a ficha de outro jogador.' };
+  if (!linha_('Contas', 0, a)) return { erro: 'Não existe jogador com esse usuário.' };
+  return { usuario: a, narrando: true };
+}
+function papel_(valores) { return texto_(valores[7]).trim().toLowerCase(); }
+function ehNarrador_(usuario) {
+  var c = linha_('Contas', 0, usuario);
+  return !!(c && papel_(c.valores) === 'narrador');
+}
+
+/* A mesa inteira, só para o Narrador: quem tem conta, qual personagem, e o PIN de cada um. */
+function mesa_(p, usuario) {
+  if (!ehNarrador_(usuario)) return { ok: false, erro: 'Esta área é do Narrador.' };
+  var contas = aba_('Contas').getDataRange().getValues();
+  var fichas = aba_('Fichas').getDataRange().getValues();
+  var porUsuario = {};
+  for (var i = 1; i < fichas.length; i++) {
+    porUsuario[String(fichas[i][0])] = {
+      rev: Number(fichas[i][1]) || 0,
+      atualizado: fichas[i][2] ? new Date(fichas[i][2]).toISOString() : '',
+      personagem: texto_(fichas[i][3]),
+      raca: texto_(fichas[i][4])
+    };
+  }
+  var agora = new Date(), lista = [];
+  for (var j = 1; j < contas.length; j++) {
+    var v = contas[j], u = String(v[0]); if (!u) continue;
+    var f = porUsuario[u] || { rev: 0, atualizado: '', personagem: '', raca: '' };
+    lista.push({
+      usuario: u, nome: texto_(v[1]), pin: texto_(v[2]), papel: papel_(v),
+      criado: v[3] ? new Date(v[3]).toISOString() : '',
+      ultimoAcesso: v[4] ? new Date(v[4]).toISOString() : '',
+      bloqueado: !!(v[6] && new Date(v[6]) > agora),
+      personagem: f.personagem, raca: f.raca, rev: f.rev, atualizado: f.atualizado
+    });
+  }
+  registrar_('mesa', usuario, lista.length + ' ficha(s)');
+  return { ok: true, jogadores: lista };
+}
+
 function carregar_(p, usuario) {
-  var f = lerFicha_('Fichas', usuario);
-  return { ok: true, rev: f ? f.rev : 0, ficha: f ? f.ficha : null };
+  var a = alvo_(p, usuario); if (a.erro) return { ok: false, erro: a.erro };
+  var f = lerFicha_('Fichas', a.usuario);
+  if (a.narrando) registrar_('narrador-abrir', usuario, a.usuario);
+  return { ok: true, rev: f ? f.rev : 0, ficha: f ? f.ficha : null, alvo: a.narrando ? a.usuario : '' };
 }
 
 function salvar_(p, usuario) {
+  var alvo = alvo_(p, usuario); if (alvo.erro) return { ok: false, erro: alvo.erro };
+  var narrando = alvo.narrando, autor = usuario;
+  usuario = alvo.usuario;
   var json = typeof p.ficha === 'string' ? p.ficha : JSON.stringify(p.ficha || null);
   if (!json || json === 'null') return { ok: false, erro: 'Ficha vazia.' };
   if (json.length > CONFIG.TAMANHO_MAX) return { ok: false, erro: 'Ficha grande demais para salvar.' };
@@ -164,13 +222,17 @@ function salvar_(p, usuario) {
 
   var ultimo = ultimoInstantaneo_(usuario);
   var mudouIdentidade = !atual || atual.personagem !== pers || atual.raca !== raca;
-  if (p.marco || mudouIdentidade || !ultimo || (agora - ultimo) > CONFIG.INSTANTANEO_MIN * 60000) {
+  /* Edição do Narrador sempre vira uma cópia no Histórico: se ele errar a mão, o jogador volta a versão. */
+  if (narrando || p.marco || mudouIdentidade || !ultimo || (agora - ultimo) > CONFIG.INSTANTANEO_MIN * 60000) {
     gravarLinha_('Historico', null, [usuario, rev, agora, pers, raca], json);
   }
-  return { ok: true, rev: rev, quando: agora.toISOString() };
+  if (narrando) registrar_('narrador-salvar', autor, usuario + ' · rev ' + rev);
+  return { ok: true, rev: rev, quando: agora.toISOString(), alvo: narrando ? usuario : '' };
 }
 
 function historico_(p, usuario) {
+  var a = alvo_(p, usuario); if (a.erro) return { ok: false, erro: a.erro };
+  usuario = a.usuario;
   var v = aba_('Historico').getDataRange().getValues(), out = [];
   for (var i = v.length - 1; i >= 1 && out.length < 60; i--) {
     if (v[i][0] === usuario) out.push({ rev: v[i][1], quando: new Date(v[i][2]).toISOString(), personagem: texto_(v[i][3]), raca: texto_(v[i][4]) });
@@ -179,6 +241,8 @@ function historico_(p, usuario) {
 }
 
 function versao_(p, usuario) {
+  var a = alvo_(p, usuario); if (a.erro) return { ok: false, erro: a.erro };
+  usuario = a.usuario;
   var v = aba_('Historico').getDataRange().getValues();
   for (var i = v.length - 1; i >= 1; i--) {
     if (v[i][0] === usuario && Number(v[i][1]) === Number(p.rev)) return { ok: true, rev: v[i][1], ficha: JSON.parse(juntar_(v[i])) };
@@ -234,7 +298,13 @@ function freio_(chave, limite, segundos, soConsultar) {
 function aba_(nome) {
   var pl = SpreadsheetApp.getActiveSpreadsheet();
   var a = pl.getSheetByName(nome);
-  if (!a) { a = pl.insertSheet(nome); a.appendRow(ABAS[nome]); a.setFrozenRows(1); }
+  if (!a) { a = pl.insertSheet(nome); a.appendRow(ABAS[nome]); a.setFrozenRows(1); return a; }
+  /* Fichas e Historico crescem em largura (os pedaços do JSON), então só as abas de largura fixa
+     são conferidas. Isto completa colunas novas numa planilha antiga sem tocar em nenhum dado. */
+  if (nome !== 'Fichas' && nome !== 'Historico' && a.getLastColumn() < ABAS[nome].length) {
+    a.getRange(1, 1, 1, ABAS[nome].length).setValues([ABAS[nome]]);
+    a.setFrozenRows(1);
+  }
   return a;
 }
 function linha_(aba, col, valor) {

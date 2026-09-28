@@ -7,8 +7,44 @@
   var num = R.num;
 
   /* ---------------- estado ---------------- */
-  var S = { sessao: null, ficha: null, rev: 0, pendente: false, timer: null, enviando: false, retry: null, ultimo: null };
+  var S = { sessao: null, ficha: null, rev: 0, pendente: false, timer: null, enviando: false, retry: null, ultimo: null,
+            alvo: '', alvoNome: '' };
   var F = function () { return S.ficha; };
+
+  /* Dono da ficha aberta agora: o próprio jogador, ou — para o Narrador — a ficha que ele abriu. */
+  function dono() { return S.alvo || (S.sessao ? S.sessao.usuario : ''); }
+  function narrando() { return !!S.alvo; }
+  function ehNarrador() { return !!(S.sessao && S.sessao.papel === 'narrador'); }
+  /* Monta o pedido já com sessão e, se for o caso, com a ficha de outro jogador como alvo. */
+  function req(o) {
+    o.usuario = S.sessao.usuario; o.token = S.sessao.token;
+    if (S.alvo) o.alvo = S.alvo;
+    return o;
+  }
+  function meuNome() { return narrando() ? null : (S.sessao && S.sessao.nome); }
+
+  /* Uma ficha em que ninguém mexeu. Serve para três coisas, todas para não perder dados:
+     nunca tratar o vazio como "alteração a enviar", nunca sobrescrever o servidor com ele,
+     e nunca deixar o jogador baixar um arquivo em branco achando que baixou a ficha. */
+  function vazia(f) {
+    if (!f) return true;
+    /* Tira tudo o que é vazio (texto em branco, zero, lista sem itens). Se não sobrar nada, ninguém mexeu.
+       Comparar com uma ficha nova campo a campo seria frágil: a ficha ganha campos vazios pelo caminho. */
+    var enxuto = function (v) {
+      if (Array.isArray(v)) { var a = v.map(enxuto).filter(function (x) { return x !== undefined; }); return a.length ? a : undefined; }
+      if (v && typeof v === 'object') {
+        var o = {}; Object.keys(v).forEach(function (k) { var x = enxuto(v[k]); if (x !== undefined) o[k] = x; });
+        return Object.keys(o).length ? o : undefined;
+      }
+      return (v === '' || v === 0 || v === false || v == null) ? undefined : v;
+    };
+    var so = function (x) {
+      var c = JSON.parse(JSON.stringify(x));
+      if (c.id) { delete c.id.jogador; delete c.id.cronica; }   // vêm da conta e da mesa, não do jogador
+      return JSON.stringify(enxuto(c) || null);
+    };
+    try { return so(f) === so(R.completar(R.novaFicha())); } catch (e) { return false; }
+  }
 
   /* ---------------- utilidades de DOM (nenhum texto do jogador passa por innerHTML) ---------------- */
   function el(tag, attrs, kids) {
@@ -71,7 +107,7 @@
         travar(fm, false);
         if (!r.ok) return msg('#m-entrar', r.erro, 'err');
         msg('#m-entrar', ''); $('#e-pin').value = '';
-        abrir({ usuario: r.usuario, nome: r.nome, token: r.token }, r);
+        abrir({ usuario: r.usuario, nome: r.nome, token: r.token, papel: r.papel || '' }, r);
       });
     });
     $('#f-criar').addEventListener('submit', function (e) {
@@ -82,7 +118,7 @@
         msg('#m-criar', '');
         $('#f-criar').hidden = true; $('#p-pin').hidden = false;
         $('#pin-novo').textContent = r.pin; $('#pin-usuario').textContent = r.usuario;
-        $('#pin-ok').onclick = function () { abrir({ usuario: r.usuario, nome: r.nome, token: r.token }, { rev: 0, ficha: null }, true); };
+        $('#pin-ok').onclick = function () { abrir({ usuario: r.usuario, nome: r.nome, token: r.token, papel: r.papel || '' }, { rev: 0, ficha: null }, true); };
       });
     });
     $('#f-recuperar').addEventListener('submit', function (e) {
@@ -105,6 +141,9 @@
   /* ============================================================ ABRIR / SALVAR ============================================================ */
   function abrir(sessao, doServidor, nova) {
     S.sessao = sessao; ST.guardarSessao(sessao);
+    S.alvo = ''; S.alvoNome = '';
+    $('#b-mesa').hidden = sessao.papel !== 'narrador';
+    banner();
     var copia = ST.copia(sessao.usuario);
     var ficha, rev;
     if (doServidor) {
@@ -112,11 +151,13 @@
       if (copia && copia.pendente && num(copia.rev) === rev && copia.ficha) { ficha = copia.ficha; S.pendente = true; }   // edições feitas offline ainda não enviadas
       else { ficha = doServidor.ficha || R.novaFicha(); S.pendente = !doServidor.ficha; }
     } else if (copia && copia.ficha) { ficha = copia.ficha; rev = num(copia.rev); S.pendente = !!copia.pendente; }
-    else { ficha = R.novaFicha(); rev = 0; S.pendente = true; }
+    /* Sem cópia neste aparelho (limpeza do navegador, aba anônima, espaço esgotado): abrimos em branco,
+       mas isso NÃO é alteração a enviar — o que vale é o que o servidor tiver. */
+    else { ficha = R.novaFicha(); rev = 0; S.pendente = false; }
     S.ficha = R.completar(ficha); S.rev = rev;
     S.ficha.id.jogador = sessao.nome || S.ficha.id.jogador;
     $('#gate').hidden = true;
-    $('#who').innerHTML = ''; $('#who').appendChild(el('span', {}, ['Jogador ', el('b', { text: sessao.nome || sessao.usuario }), ' · ', sessao.usuario]));
+    quemSou();
     renderTudo();
     guardarCopia();
     if (!doServidor) sincronizarAoAbrir();
@@ -126,16 +167,21 @@
 
   function sincronizarAoAbrir() {
     sync('Conferindo o servidor…', '');
-    ST.chamar({ acao: 'carregar', usuario: S.sessao.usuario, token: S.sessao.token }).then(function (r) {
+    ST.chamar(req({ acao: 'carregar' })).then(function (r) {
       if (r.sessao === false) return pedirLogin(r.erro);
       if (!r.ok) return sync(r.rede ? 'Offline — salvo no aparelho' : r.erro, 'warn');
       if (num(r.rev) === S.rev) { if (S.pendente) agendar(300); else sync('Salvo', ''); return; }
-      if (num(r.rev) > S.rev && !S.pendente) { S.ficha = R.completar(r.ficha || R.novaFicha()); S.ficha.id.jogador = S.sessao.nome; S.rev = num(r.rev); guardarCopia(); renderTudo(); sync('Atualizada do servidor', ''); return; }
+      /* O servidor tem versão mais nova: ela entra. Se o que está aberto aqui é uma ficha em branco,
+         não há nada a perder, então nem perguntamos — trazer a do servidor é sempre o certo. */
+      if (num(r.rev) > S.rev && (!S.pendente || vazia(S.ficha))) {
+        S.ficha = R.completar(r.ficha || R.novaFicha()); if (meuNome()) S.ficha.id.jogador = meuNome();
+        S.rev = num(r.rev); S.pendente = false; guardarCopia(); renderTudo(); sync('Atualizada do servidor', ''); return;
+      }
       conflito({ rev: r.rev, ficha: r.ficha });
     });
   }
 
-  function guardarCopia() { ST.guardarCopia(S.sessao.usuario, { ficha: S.ficha, rev: S.rev, pendente: S.pendente, quando: Date.now() }); }
+  function guardarCopia() { ST.guardarCopia(dono(), { ficha: S.ficha, rev: S.rev, pendente: S.pendente, quando: Date.now() }); }
   function sync(t, cls) { var s = $('#sync'); s.textContent = t; s.className = 'sync' + (cls ? ' ' + cls : ''); }
   function agendar(ms) { clearTimeout(S.timer); S.timer = setTimeout(function () { enviar(false); }, ms == null ? 2500 : ms); }
 
@@ -151,7 +197,7 @@
     S.enviando = true; clearTimeout(S.retry);
     var enviada = JSON.stringify(S.ficha);
     sync('Salvando…', 'warn');
-    return ST.chamar({ acao: 'salvar', usuario: S.sessao.usuario, token: S.sessao.token, rev: S.rev, ficha: JSON.parse(enviada), marco: !!marco }).then(function (r) {
+    return ST.chamar(req({ acao: 'salvar', rev: S.rev, ficha: JSON.parse(enviada), marco: !!marco })).then(function (r) {
       S.enviando = false;
       if (r.ok) {
         S.rev = r.rev;
@@ -166,19 +212,25 @@
   }
 
   function conflito(r) {
+    /* Nada a comparar: o que está aberto aqui é uma ficha em branco. Traz a do servidor e pronto. */
+    if (vazia(S.ficha)) {
+      S.ficha = R.completar(r.ficha || R.novaFicha()); if (meuNome()) S.ficha.id.jogador = meuNome();
+      S.rev = num(r.rev); S.pendente = false; guardarCopia(); renderTudo(); sync('Atualizada do servidor', '');
+      return;
+    }
     modal([
       el('h2', { text: 'Versão mais nova em outro lugar' }),
       el('p', { class: 'note', text: 'Esta ficha foi salva em outro aparelho (ou outra aba) depois que você a abriu aqui. Nada foi perdido: as duas versões ficam no histórico. Qual você quer manter aberta?' }),
       el('div', { class: 'acts' }, [
-        el('button', { class: 'btn', type: 'button', text: 'Abrir a mais nova', on: { click: function () { fecharModal(); S.ficha = R.completar(r.ficha || R.novaFicha()); S.ficha.id.jogador = S.sessao.nome; S.rev = num(r.rev); S.pendente = false; guardarCopia(); renderTudo(); sync('Versão mais nova aberta', ''); } } }),
+        el('button', { class: 'btn', type: 'button', text: 'Abrir a mais nova', on: { click: function () { fecharModal(); S.ficha = R.completar(r.ficha || R.novaFicha()); if (meuNome()) S.ficha.id.jogador = meuNome(); S.rev = num(r.rev); S.pendente = false; guardarCopia(); renderTudo(); sync('Versão mais nova aberta', ''); } } }),
         el('button', { class: 'btn ghost', type: 'button', text: 'Manter a deste aparelho', on: { click: function () {
           fecharModal();
-          ST.chamar({ acao: 'salvar', usuario: S.sessao.usuario, token: S.sessao.token, rev: S.rev, ficha: S.ficha, forcar: true, marco: true }).then(function (x) {
+          ST.chamar(req({ acao: 'salvar', rev: S.rev, ficha: S.ficha, forcar: true, marco: true })).then(function (x) {
             if (x.ok) { S.rev = x.rev; S.pendente = false; guardarCopia(); sync('Salvo · a outra versão foi para o histórico', ''); } else sync('Erro: ' + x.erro, 'err');
           });
         } } })
       ])
-    ]);
+    ], false, true);                       // escolha obrigatória: não fecha no Esc nem clicando fora
   }
 
   function pedirLogin(texto) {
@@ -192,18 +244,119 @@
   function sair() {
     var fim = function () {
       if (S.sessao) ST.chamar({ acao: 'sair', usuario: S.sessao.usuario, token: S.sessao.token });
-      ST.esquecerSessao(); S.sessao = null; S.ficha = null;
+      ST.esquecerSessao(); S.sessao = null; S.ficha = null; S.alvo = ''; S.alvoNome = '';
+      $('#b-mesa').hidden = true; banner();
       $('#gate').hidden = false; mostrarPainel('entrar'); msg('#m-entrar', 'Você saiu. A ficha está salva.', 'ok');
     };
     if (S.pendente) enviar(true).then(function (r) { if (r && r.ok) fim(); else if (confirm('A última alteração ainda não chegou ao servidor. Ela continua guardada neste aparelho. Sair mesmo assim?')) fim(); });
     else fim();
   }
 
+  /* ============================================================ NARRADOR ============================================================ */
+  function quemSou() {
+    var w = $('#who'); if (!w || !S.sessao) return;
+    w.innerHTML = '';
+    if (narrando()) w.appendChild(el('span', {}, ['Narrador ', el('b', { text: S.sessao.nome || S.sessao.usuario }), ' · ficha de ', S.alvoNome || S.alvo]));
+    else w.appendChild(el('span', {}, [ehNarrador() ? 'Narrador ' : 'Jogador ', el('b', { text: S.sessao.nome || S.sessao.usuario }), ' · ', S.sessao.usuario]));
+  }
+  function banner() {
+    var b = $('#narrando'); if (!b) return;
+    if (!narrando()) { b.hidden = true; return; }
+    var t = $('#narrando-txt'); t.innerHTML = '';
+    t.appendChild(el('span', {}, ['Modo Narrador · editando a ficha de ', el('b', { text: S.alvoNome || S.alvo }), ' (', S.alvo, ')']));
+    b.hidden = false;
+  }
+
+  /* Troca a ficha aberta: alvo vazio volta para a do próprio Narrador.
+     O que estava pendente é enviado antes, para nada da ficha anterior cair na próxima. */
+  function trocarFicha(alvo, nome) {
+    var ir = function () {
+      clearTimeout(S.timer); clearTimeout(S.retry);
+      S.alvo = alvo || ''; S.alvoNome = nome || ''; S.pendente = false;
+      sync('Abrindo…', 'warn');
+      ST.chamar(req({ acao: 'carregar' })).then(function (r) {
+        if (r.sessao === false) return pedirLogin(r.erro);
+        if (!r.ok) { S.alvo = ''; S.alvoNome = ''; banner(); quemSou(); return sync(r.erro || 'Não deu para abrir a ficha.', 'err'); }
+        S.ficha = R.completar(r.ficha || R.novaFicha());
+        if (meuNome()) S.ficha.id.jogador = meuNome();
+        S.rev = num(r.rev); S.pendente = false;
+        guardarCopia(); renderTudo(); banner(); quemSou();
+        sync(narrando() ? 'Ficha de ' + (S.alvoNome || S.alvo) : 'Salvo', '');
+      });
+    };
+    if (S.pendente) enviar(true).then(ir); else ir();
+  }
+
+  /* Busca de novo no servidor a ficha aberta agora (a própria, ou a do jogador que o Narrador abriu). */
+  function recarregarDoServidor() {
+    sync('Buscando no servidor…', 'warn');
+    ST.chamar(req({ acao: 'carregar' })).then(function (r) {
+      if (r.sessao === false) return pedirLogin(r.erro);
+      if (!r.ok) return sync(r.rede ? 'Sem conexão com o servidor' : ('Erro: ' + r.erro), r.rede ? 'warn' : 'err');
+      if (!r.ficha) return sync('Não há ficha salva nesta conta ainda', 'warn');
+      S.ficha = R.completar(r.ficha); if (meuNome()) S.ficha.id.jogador = meuNome();
+      S.rev = num(r.rev); S.pendente = false; guardarCopia(); renderTudo();
+      sync('Ficha recuperada do servidor', '');
+    });
+  }
+
+  /* Trava de segurança dos downloads: em branco, ninguém baixa nada sem ser avisado. */
+  function baixarSePreenchida(fn) {
+    if (!vazia(F())) return fn(F());
+    modal([
+      el('h2', { text: 'A ficha aberta está em branco' }),
+      el('p', { class: 'note', text: 'O arquivo sairia vazio, então ele não foi gerado. Isto acontece quando este aparelho perdeu a cópia local — limpeza do navegador, aba anônima ou espaço esgotado. Se você já salvou a ficha alguma vez, ela continua no servidor.' }),
+      el('div', { class: 'acts' }, [
+        el('button', { class: 'btn', type: 'button', text: 'Buscar a ficha salva', on: { click: function () { fecharModal(); recarregarDoServidor(); } } }),
+        el('button', { class: 'btn ghost', type: 'button', text: 'Fechar', on: { click: fecharModal } })
+      ])
+    ]);
+  }
+
+  function abrirMesa() {
+    var titulo = el('h2', { text: 'A mesa' });
+    modal([titulo, el('p', { class: 'note', text: 'Carregando…' })], true);
+    ST.chamar({ acao: 'mesa', usuario: S.sessao.usuario, token: S.sessao.token }).then(function (r) {
+      if (r.sessao === false) { fecharModal(); return pedirLogin(r.erro); }
+      if (!r.ok) return modal([titulo, el('p', { class: 'msg err', text: r.erro || 'Não deu para ler a mesa.' }),
+        el('div', { class: 'acts' }, [el('button', { class: 'btn ghost', type: 'button', text: 'Fechar', on: { click: fecharModal } })])], true);
+      var lista = (r.jogadores || []).slice().sort(function (a, b) {
+        return ((b.rev > 0) - (a.rev > 0)) || String(a.personagem || a.usuario).localeCompare(String(b.personagem || b.usuario), 'pt-BR');
+      });
+      var ul = el('ul', { class: 'mesa' });
+      lista.forEach(function (j) {
+        var eu = j.usuario === S.sessao.usuario;
+        var partes = [j.nome, j.usuario]; if (j.raca) partes.push(j.raca);
+        if (j.atualizado) partes.push('editada ' + new Date(j.atualizado).toLocaleString('pt-BR'));
+        else if (!j.rev) partes.push('ainda sem ficha');
+        if (j.papel === 'narrador') partes.push('Narrador');
+        if (j.bloqueado) partes.push('bloqueado por PINs errados');
+        ul.appendChild(el('li', { class: eu ? 'eu' : null }, [
+          el('span', { class: 'pers' }, [
+            j.personagem ? el('span', { text: j.personagem }) : el('span', { class: 'vazio', text: 'sem personagem' }),
+            el('span', { class: 'sub', text: partes.filter(Boolean).join(' · ') })
+          ]),
+          el('span', { class: 'pino' + (j.bloqueado ? ' bloq' : ''), title: 'PIN de ' + j.usuario, text: j.pin || '—' }),
+          el('button', { class: 'btn small' + (eu ? ' ghost' : ''), type: 'button', text: eu ? 'A sua ficha' : 'Abrir',
+            on: { click: function () { fecharModal(); trocarFicha(eu ? '' : j.usuario, eu ? '' : (j.nome || j.usuario)); } } })
+        ]));
+      });
+      modal([titulo,
+        el('p', { class: 'note', text: 'Abrir a ficha de alguém aqui deixa você editá-la como Narrador. Cada salvamento seu guarda uma cópia no histórico daquela ficha, e a planilha registra quem abriu e quem salvou.' }),
+        lista.length ? ul : el('p', { class: 'note', text: 'Nenhuma conta criada ainda.' }),
+        el('div', { class: 'acts' }, [el('button', { class: 'btn ghost', type: 'button', text: 'Fechar', on: { click: fecharModal } })])], true);
+    });
+  }
+
   /* ---------------- modal ---------------- */
-  function modal(kids) { var b = $('#modal-box'); b.innerHTML = ''; kids.forEach(function (k) { b.appendChild(k); }); $('#modal').hidden = false; }
-  function fecharModal() { $('#modal').hidden = true; }
-  $('#modal').addEventListener('click', function (e) { if (e.target.id === 'modal') fecharModal(); });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#modal').hidden) fecharModal(); });
+  function modal(kids, larga, fixo) {
+    var b = $('#modal-box'); b.innerHTML = ''; b.classList.toggle('larga', !!larga);
+    S.modalFixo = !!fixo;
+    kids.forEach(function (k) { b.appendChild(k); }); $('#modal').hidden = false;
+  }
+  function fecharModal() { S.modalFixo = false; $('#modal').hidden = true; }
+  $('#modal').addEventListener('click', function (e) { if (e.target.id === 'modal' && !S.modalFixo) fecharModal(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#modal').hidden && !S.modalFixo) fecharModal(); });
 
   /* ============================================================ LIGAÇÕES SIMPLES ============================================================ */
   function ligarCampos() {
@@ -829,18 +982,25 @@
   }
 
   /* ============================================================ BARRA ============================================================ */
+  $('#b-mesa').addEventListener('click', abrirMesa);
+  $('#b-voltar-minha').addEventListener('click', function () { trocarFicha('', ''); });
   $('#b-sair').addEventListener('click', sair);
   $('#b-salvar').addEventListener('click', function () { enviar(true); });
-  $('#b-pdf').addEventListener('click', function () { window.PHExport.pdf(F()); });
+  $('#b-pdf').addEventListener('click', function () { baixarSePreenchida(window.PHExport.pdf); });
   $('#b-xlsx').addEventListener('click', function () {
-    var b = this; b.disabled = true; sync('Gerando planilha…', 'warn');
-    window.PHExport.xlsx(F()).then(function () { sync('Planilha gerada', ''); }).catch(function (e) { sync('Erro ao gerar planilha: ' + e.message, 'err'); }).then(function () { b.disabled = false; });
+    var b = this; b.disabled = true;
+    if (vazia(F())) { b.disabled = false; return baixarSePreenchida(window.PHExport.xlsx); }
+    sync('Gerando planilha…', 'warn');
+    window.PHExport.xlsx(F())
+      .then(function () { sync('Planilha gerada', ''); })
+      .catch(function (e) { sync('Erro ao gerar planilha: ' + e.message, 'err'); })
+      .then(function () { b.disabled = false; });
   });
   $('#b-json').addEventListener('click', function () {
     modal([el('h2', { text: 'Arquivo da ficha' }),
       el('p', { class: 'note', text: 'Um arquivo .json é uma cópia completa da ficha: serve de backup e para levar a ficha para outro aparelho no modo local.' }),
       el('div', { class: 'acts' }, [
-        el('button', { class: 'btn', type: 'button', text: 'Baixar .json', on: { click: function () { window.PHExport.json(F()); } } }),
+        el('button', { class: 'btn', type: 'button', text: 'Baixar .json', on: { click: function () { baixarSePreenchida(window.PHExport.json); } } }),
         el('button', { class: 'btn ghost', type: 'button', text: 'Carregar .json', on: { click: function () { $('#arquivo').click(); } } }),
         el('button', { class: 'btn ghost', type: 'button', text: 'Fechar', on: { click: fecharModal } })])]);
   });
@@ -851,7 +1011,7 @@
         var o = JSON.parse(rd.result); var ficha = o && o.ficha ? o.ficha : o;
         if (!ficha || typeof ficha !== 'object' || !ficha.atr) throw new Error('não é uma ficha PlanetHell');
         if (!confirm('Substituir a ficha aberta pela do arquivo? A atual continua nas versões anteriores.')) return;
-        S.ficha = R.completar(ficha); S.ficha.id.jogador = S.sessao.nome; fecharModal(); renderTudo(); mudou(); enviar(true);
+        S.ficha = R.completar(ficha); if (meuNome()) S.ficha.id.jogador = meuNome(); fecharModal(); renderTudo(); mudou(); enviar(true);
       } catch (e) { alert('Arquivo inválido: ' + e.message); }
     };
     rd.readAsText(file); this.value = '';
@@ -859,7 +1019,7 @@
   $('#b-hist').addEventListener('click', function () {
     modal([el('h2', { text: 'Versões salvas' }), el('p', { class: 'note', text: 'Carregando…' })]);
     enviar(true).then(function () {
-      return ST.chamar({ acao: 'historico', usuario: S.sessao.usuario, token: S.sessao.token });
+      return ST.chamar(req({ acao: 'historico' }));
     }).then(function (r) {
       if (!r.ok) { modal([el('h2', { text: 'Versões salvas' }), el('p', { class: 'note', text: r.erro })]); return; }
       var ul = el('ul', { class: 'vers' });
@@ -867,9 +1027,9 @@
         ul.appendChild(el('li', {}, [el('span', { text: new Date(v.quando).toLocaleString('pt-BR') + ' · ' + (v.personagem || 'sem nome') + ' · v' + v.rev }),
           el('button', { class: 'btn small ghost', type: 'button', text: 'Restaurar', on: { click: function () {
             if (!confirm('Abrir esta versão? A ficha atual também fica guardada no histórico.')) return;
-            ST.chamar({ acao: 'versao', usuario: S.sessao.usuario, token: S.sessao.token, rev: v.rev }).then(function (x) {
+            ST.chamar(req({ acao: 'versao', rev: v.rev })).then(function (x) {
               if (!x.ok) return alert(x.erro);
-              S.ficha = R.completar(x.ficha); S.ficha.id.jogador = S.sessao.nome; fecharModal(); renderTudo(); mudou(); enviar(true);
+              S.ficha = R.completar(x.ficha); if (meuNome()) S.ficha.id.jogador = meuNome(); fecharModal(); renderTudo(); mudou(); enviar(true);
             });
           } } })]));
       });
@@ -883,7 +1043,7 @@
     if (!S.sessao || !S.pendente) return;
     guardarCopia();
     if (ST.modo === 'servidor' && navigator.sendBeacon) {
-      try { navigator.sendBeacon(window.PH_CONFIG.servidor, new Blob([JSON.stringify({ acao: 'salvar', usuario: S.sessao.usuario, token: S.sessao.token, rev: S.rev, ficha: S.ficha })], { type: 'text/plain' })); } catch (x) {}
+      try { navigator.sendBeacon(window.PH_CONFIG.servidor, new Blob([JSON.stringify(req({ acao: 'salvar', rev: S.rev, ficha: S.ficha }))], { type: 'text/plain' })); } catch (x) {}
     }
   });
 

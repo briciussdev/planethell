@@ -24,6 +24,13 @@ http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.url === '/__fora') { fora = true; return res.end('ok'); }
   if (req.url === '/__volta') { fora = false; return res.end('ok'); }
+  /* /__narrador?u=usuario — faz na planilha simulada o que você faria à mão na sua: escrever "narrador" na coluna papel. */
+  if (req.url.startsWith('/__narrador')) {
+    const u = decodeURIComponent((req.url.split('u=')[1] || '').split('&')[0]).toLowerCase();
+    const linha = (abas.Contas ? abas.Contas.linhas : []).find(l => String(l[0]) === u);
+    if (linha) { while (linha.length < 8) linha.push(''); linha[7] = 'narrador'; }
+    return res.end(linha ? 'ok' : 'nao achou');
+  }
   if (req.url === '/__abas') { res.setHeader('Content-Type', 'application/json'); return res.end(JSON.stringify(Object.fromEntries(Object.entries(abas).map(([k, v]) => [k, v.linhas.length])))); }
   if (fora) { req.socket.destroy(); return; }
   let body = ''; req.on('data', c => body += c); req.on('end', () => {
