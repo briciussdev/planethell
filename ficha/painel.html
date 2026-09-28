@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Painel do Narrador — PlanetHell</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap">
+<link rel="stylesheet" href="ficha.css">
+<style>
+  .painel{max-width:1280px;margin-inline:auto;padding:16px 16px 60px}
+  .cartoes{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:14px;margin-top:16px}
+  .jog{display:grid;gap:12px;padding:14px}
+  .jog .cab{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:start}
+  .jog .retra{width:64px;aspect-ratio:3/4;border:1px solid var(--g-line);background:var(--panel2);display:grid;place-items:center;overflow:hidden}
+  .jog .retra img{width:100%;height:100%;object-fit:cover}
+  .jog .retra span{font-family:var(--hud);font-size:8px;letter-spacing:.1em;color:var(--g-dim);text-align:center}
+  .jog h3{margin:0;font-family:var(--hud);font-size:16px;color:var(--g);letter-spacing:.04em}
+  .jog .sub{font-size:12.5px;color:var(--muted);margin:3px 0 0}
+  .jog .bloco{border-top:1px solid rgba(0,255,0,.14);padding-top:10px}
+  .jog .rot{font-family:var(--hud);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--g-dim);margin:0 0 6px}
+  .linha{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .linha .num{font-family:var(--hud);font-size:18px;font-weight:800;color:var(--g);min-width:2.5ch;text-align:center}
+  .linha input[type=number],.linha input[type=text]{background:var(--cell);border:1px solid var(--g-line);color:var(--g);padding:6px 8px;width:7ch;font-family:var(--hud)}
+  .linha input.larga{width:16ch;font-family:var(--read);color:var(--text)}
+  .mini{font-family:var(--hud);font-size:11px;padding:4px 9px;border:1px solid var(--g);background:transparent;color:var(--g);cursor:pointer;
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
+  .mini:hover{background:var(--g-faint)}
+  .mini.forte{background:var(--g);color:#000}
+  .xp{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--hud);font-size:11px;letter-spacing:.1em;color:var(--g-dim)}
+  .xp b{display:block;font-size:20px;color:var(--g);letter-spacing:0}
+  .xp .neg b{color:var(--red)}
+  .jog .rodape{display:flex;gap:8px;align-items:center;justify-content:space-between;border-top:1px solid rgba(0,255,0,.14);padding-top:10px}
+  .jog .aviso{font-family:var(--hud);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .jog.sujo{border-color:var(--amber)}
+  .jog.sujo .aviso{color:var(--amber)}
+  .cab-painel{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding-block:10px}
+  .cab-painel h1{font-family:var(--hud);font-size:18px;color:var(--g);letter-spacing:.06em;text-transform:uppercase;margin:0}
+  .cab-painel .sp{flex:1}
+  .msgp{font-size:14px;padding:12px 14px;border:1px solid var(--g-line);margin-top:16px}
+  .msgp.err{border-color:var(--red);color:var(--red)}
+</style>
+</head>
+<body>
+
+<header class="bar noprint">
+  <div class="wrap bar-in">
+    <a class="brand" href="../">PLANETHELL<small>NARRADOR</small></a>
+    <span class="who" id="who"></span>
+    <span class="sync" id="sync"></span>
+    <span class="sp"></span>
+    <div class="acts">
+      <button class="btn ghost small" type="button" id="b-atualizar">Atualizar</button>
+      <a class="btn ghost small" href="./">Minha ficha</a>
+    </div>
+  </div>
+</header>
+
+<div class="painel">
+  <div class="cab-painel">
+    <h1>Painel da mesa</h1>
+    <span class="sp"></span>
+    <span class="note" id="resumo"></span>
+  </div>
+  <div id="saida"></div>
+  <div class="cartoes" id="cartoes"></div>
+</div>
+
+<script src="config.js"></script>
+<script src="dados.js"></script>
+<script src="regras.js"></script>
+<script src="armazem.js"></script>
+<script src="painel.js"></script>
+</body>
+</html>

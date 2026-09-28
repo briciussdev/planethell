@@ -13,5 +13,7 @@ function rodar(modo) { return new Promise(ok => spawn(process.execPath, [path.jo
 setTimeout(async () => {
   const a = await rodar('local'), b = await rodar('servidor');
   const c = await new Promise(ok => spawn(process.execPath, [path.join(__dirname, 'resgate.test.mjs')], { stdio: 'inherit' }).on('exit', ok));
-  back.kill(); site.close(); process.exit(a || b || c ? 1 : 0);
+  const d = await new Promise(ok => spawn(process.execPath, [path.join(__dirname, 'painel.test.mjs')], { stdio: 'inherit' }).on('exit', ok));
+  const e = await new Promise(ok => spawn(process.execPath, [path.join(__dirname, 'landing.test.mjs')], { stdio: 'inherit' }).on('exit', ok));
+  back.kill(); site.close(); process.exit(a || b || c || d || e ? 1 : 0);
 }, 600);

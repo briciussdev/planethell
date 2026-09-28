@@ -93,6 +93,8 @@ O Narrador entra no site como qualquer jogador, com usuário e PIN, e ganha um b
 
 **O que o botão Mesa mostra.** Uma linha por conta, com o nome do personagem, a raça, o jogador, quando a ficha foi editada pela última vez e o **PIN** — útil quando alguém trava na hora da sessão. Fichas ainda em branco aparecem como "sem personagem".
 
+**O painel.** O botão **Painel**, ao lado de Mesa, abre `ficha/painel.html`: um cartão por jogador com o retrato, o XP (ganho, gasto e disponível), os créditos, as trilhas de Saúde e de Força de Vontade, a Moralidade, as Manchas e o Despertar — tudo editável ali mesmo. Dar XP registra o motivo no histórico da ficha do jogador, como se ele tivesse anotado. Cada cartão guarda as suas alterações até você clicar em **Salvar**, e avisa em âmbar enquanto houver coisa por gravar. Se o jogador tiver salvado a ficha nesse meio tempo, o painel avisa do conflito em vez de passar por cima.
+
 **Abrir a ficha de um jogador.** Clique em *Abrir*. A ficha dele carrega no lugar da sua, com uma tarja âmbar avisando de quem ela é, e o Narrador pode editar tudo: XP, Moralidade, Manchas, Despertar, dano, o que for. O botão *Voltar à minha ficha* desfaz a troca.
 
 **Com que cuidado isso é feito.**
@@ -148,6 +150,7 @@ Se ainda assim alguém estiver vendo uma ficha vazia:
 
 ## 6. Exportar
 
+- **Foto**: a ficha aceita um retrato (botão *Escolher foto*, na Identidade). A imagem é reduzida no próprio navegador antes de entrar na ficha, e aparece também no PDF e na planilha.
 - **Excel / Sheets**: baixa uma planilha `.xlsx` no visual da ficha (preto, verde, Orbitron), com fórmulas nos derivados. Para usar no Google Sheets: Google Drive → **Novo → Upload de arquivo**, depois abra com o Planilhas Google.
 - **PDF**: abre a impressão do navegador com uma folha própria (fundo branco, economiza tinta). Escolha **Salvar como PDF**.
 - **Arquivo**: baixa ou carrega um `.json` com a ficha inteira. Serve de backup e para levar a ficha de um aparelho a outro no modo local.
@@ -177,6 +180,8 @@ São três baterias:
 
 - **`testes/regras.test.js`**: o motor de regras contra o guia. Cria a Nadia Corvo do passo a passo da seção 10 e confere derivados, verificação de criação, afinidades, Quirks, XP, dados, escada e dano.
 - **`testes/servidor.test.js`**: roda o `Code.gs` com uma planilha simulada. Cobre contas, PIN, bloqueio, sessões, conflito entre aparelhos, histórico, fichas grandes, injeção de fórmula, o acesso do Narrador (e a recusa a quem não é) e a ausência de qualquer operação de apagar.
+- **`testes/painel.test.mjs`**: o painel do Narrador de ponta a ponta — dar XP, mexer em créditos e dano, salvar, e o jogador recebendo tudo na ficha dele. Cobre também os balões de ajuda, a cor das Trilhas afins, a foto e o silêncio da barra de status.
+- **`testes/landing.test.mjs`**: a landing page — guia inteiro, rolador, balões de ajuda e o layout no celular.
 - **`testes/resgate.test.mjs`**: monta uma ficha em modo local, troca o site para o modo servidor e confere que a página de resgate ainda acha a ficha antiga, baixa o `.json` e ele entra inteiro numa conta nova.
 - **`testes/navegador.test.mjs`**: preenche a ficha clicando, nos dois modos (local e servidor). Cobre criar conta, montar a Nadia, conferir os cálculos, rolar, gastar XP, salvar, recarregar, trocar de aparelho, conflito, queda de conexão, recuperar o PIN, bloqueio, a Mesa do Narrador (abrir a ficha de outro jogador, editar e o jogador receber a alteração), a perda da cópia local (a ficha volta do servidor e o download não sai vazio), exportar `.xlsx` e PDF, e o layout no celular.
 

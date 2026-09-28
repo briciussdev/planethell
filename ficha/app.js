@@ -142,7 +142,7 @@
   function abrir(sessao, doServidor, nova) {
     S.sessao = sessao; ST.guardarSessao(sessao);
     S.alvo = ''; S.alvoNome = '';
-    $('#b-mesa').hidden = sessao.papel !== 'narrador';
+    $('#b-mesa').hidden = $('#b-painel').hidden = sessao.papel !== 'narrador';
     banner();
     var copia = ST.copia(sessao.usuario);
     var ficha, rev;
@@ -182,12 +182,17 @@
   }
 
   function guardarCopia() { ST.guardarCopia(dono(), { ficha: S.ficha, rev: S.rev, pendente: S.pendente, quando: Date.now() }); }
-  function sync(t, cls) { var s = $('#sync'); s.textContent = t; s.className = 'sync' + (cls ? ' ' + cls : ''); }
-  function agendar(ms) { clearTimeout(S.timer); S.timer = setTimeout(function () { enviar(false); }, ms == null ? 2500 : ms); }
+  /* A barra de status fala pouco de propósito: quem está escrevendo a ficha não quer um aviso
+     mudando a cada tecla. Enquanto há coisa por enviar, aparece só um ponto âmbar ao lado do texto;
+     o texto em si só muda quando algo realmente acontece (salvou, caiu a conexão, deu erro). */
+  function sync(t, cls) { var s = $('#sync'); s.textContent = t; s.className = 'sync' + (cls ? ' ' + cls : '') + (S.pendente ? ' pend' : ''); }
+  function ponto() { var s = $('#sync'); if (s) s.classList.toggle('pend', !!S.pendente); }
+  var ESPERA = 15000;                    // salvamento automático: uma vez a cada 15 segundos de digitação
+  function agendar(ms) { clearTimeout(S.timer); S.timer = setTimeout(function () { enviar(false); }, ms == null ? ESPERA : ms); }
 
   function mudou() {
     S.pendente = true; guardarCopia(); recalcular();
-    sync(ST.modo === 'servidor' ? 'Alterações não enviadas…' : 'Salvando…', 'warn');
+    ponto();
     agendar();
   }
 
@@ -196,7 +201,7 @@
     if (S.enviando) { agendar(1200); return Promise.resolve(); }
     S.enviando = true; clearTimeout(S.retry);
     var enviada = JSON.stringify(S.ficha);
-    sync('Salvando…', 'warn');
+    if (marco) sync('Salvando…', 'warn');           // só no clique em Salvar; o automático é silencioso
     return ST.chamar(req({ acao: 'salvar', rev: S.rev, ficha: JSON.parse(enviada), marco: !!marco })).then(function (r) {
       S.enviando = false;
       if (r.ok) {
@@ -245,7 +250,7 @@
     var fim = function () {
       if (S.sessao) ST.chamar({ acao: 'sair', usuario: S.sessao.usuario, token: S.sessao.token });
       ST.esquecerSessao(); S.sessao = null; S.ficha = null; S.alvo = ''; S.alvoNome = '';
-      $('#b-mesa').hidden = true; banner();
+      $('#b-mesa').hidden = $('#b-painel').hidden = true; banner();
       $('#gate').hidden = false; mostrarPainel('entrar'); msg('#m-entrar', 'Você saiu. A ficha está salva.', 'ok');
     };
     if (S.pendente) enviar(true).then(function (r) { if (r && r.ok) fim(); else if (confirm('A última alteração ainda não chegou ao servidor. Ela continua guardada neste aparelho. Sair mesmo assim?')) fim(); });
@@ -388,7 +393,7 @@
     $('#w-afimlivre').hidden = F().raca !== 'Human';
     $('#w-atrdesp').hidden = num(F().despertar) < 4;
     renderAtr(); renderPer(); renderEsp(); renderTrilhas(); renderVD('vant'); renderVD('def');
-    renderConvic(); renderArmas(); renderBlind(); renderItens(); renderCons(); renderMoral(); renderDesp();
+    renderConvic(); renderArmas(); renderBlind(); renderItens(); renderCons(); renderMoral(); renderDesp(); renderFoto();
     renderXPlog(); prepararCompra(); prepararRolador();
     $$('.modo button').forEach(function (b) { b.classList.toggle('on', b.dataset.modo === (F().modo || 'criacao')); });
     recalcular();
@@ -446,7 +451,9 @@
       var col = el('div', {}, [el('p', { class: 'grpt', text: g[0] })]);
       PH.atributos.filter(function (a) { return a.grupo === g[1]; }).forEach(function (a) {
         var v = num(F().atr[a.nome]);
-        col.appendChild(el('div', { class: 'trait' + (v ? '' : ' zero') }, [el('span', { class: 'n' }, [a.nome, el('small', { text: a.cat })]),
+        var nm = el('span', { class: 'nm', text: a.nome });
+        if (window.PHAjuda) window.PHAjuda.ligar(nm, a.nome, 'atributos');
+        col.appendChild(el('div', { class: 'trait' + (v ? '' : ' zero') }, [el('span', { class: 'n' }, [nm, el('small', { text: a.cat })]),
           dots(v, R.capAtributo(F(), a.nome), function (n) { F().atr[a.nome] = n; renderAtr(); mudou(); }, { rot: a.nome, cap: 5 })]));
       });
       box.appendChild(col);
@@ -460,7 +467,9 @@
       PH.pericias.filter(function (p) { return p.grupo === g[1]; }).forEach(function (p) {
         var v = num(F().per[p.nome]);
         var esp = F().esp.filter(function (e) { return e.pericia === p.nome && (e.nome || '').trim(); }).map(function (e) { return e.nome; });
-        col.appendChild(el('div', { class: 'trait' + (v ? '' : ' zero') }, [el('span', { class: 'n' }, [p.nome].concat(esp.length ? [el('small', { text: '(' + esp.join(', ') + ')' })] : [])),
+        var nmp = el('span', { class: 'nm', text: p.nome });
+        if (window.PHAjuda) window.PHAjuda.ligar(nmp, p.nome, 'pericias');
+        col.appendChild(el('div', { class: 'trait' + (v ? '' : ' zero') }, [el('span', { class: 'n' }, [nmp].concat(esp.length ? [el('small', { text: '(' + esp.join(', ') + ')' })] : [])),
           dots(v, 5, function (n) { F().per[p.nome] = n; renderPer(); renderEspSelects(); mudou(); }, { rot: p.nome })]));
       });
       box.appendChild(col);
@@ -563,13 +572,45 @@
 
   /* ---------------- trilhas ---------------- */
   var TIPOS_TRILHA = Object.keys(PH.trilhas);
+
+  /* O seletor de Trilha diz de cara o que combina com a raça:
+     azul = afim (custa novo valor × 5), verde = pode comprar (× 7), cenoura = não existe para esta raça.
+     A marca em texto vai junto porque celular costuma ignorar cor em <option>. */
+  function opcoesTrilha(sel, f) {
+    var af = R.afins(f), afins = af.nomes.map(R.norm);
+    sel.innerHTML = '';
+    sel.appendChild(el('option', { value: '', text: 'Trilha' }));
+    TIPOS_TRILHA.forEach(function (t) {
+      var afim = afins.indexOf(R.norm(t)) >= 0;
+      sel.appendChild(el('option', { value: t, class: afim ? 'afim' : 'ok', text: (afim ? '★ ' : '') + t + (afim ? ' · afim' : '') }));
+    });
+    sel.appendChild(el('option', { value: 'Quirk', class: af.quirk ? 'afim' : 'nao',
+      text: (af.quirk ? '★ Quirk (poder único) · afim' : '✕ Quirk (poder único) · a sua raça não tem') }));
+    sel.appendChild(el('option', { value: 'Outra', class: 'ok', text: 'Outra' }));
+  }
+  function classeTrilha(sel) {
+    var o = sel.options[sel.selectedIndex];
+    sel.className = o ? (o.className || '') : '';
+  }
+
   function renderTrilhas() {
     var box = $('#trilhas'); box.innerHTML = '';
+    if (F().raca) {
+      var af = R.afins(F());
+      box.appendChild(el('p', { class: 'note legenda-trilha' }, [
+        el('b', { class: 'afim', text: '★ afins' }), ' da sua raça' + (af.nomes.length ? ' (' + af.nomes.join(', ') + (af.quirk ? ' e a sua Quirk' : '') + ')' : '') + ' — custam menos XP · ',
+        el('b', { class: 'ok', text: 'verdes' }), ' você pode comprar, mais caro · ',
+        el('b', { class: 'nao', text: '✕ cenoura' }), ' não existe para esta raça.'
+      ]));
+    } else {
+      box.appendChild(el('p', { class: 'note legenda-trilha', text: 'Escolha a raça lá em cima para a ficha marcar quais Trilhas são afins.' }));
+    }
     F().trilhas.forEach(function (t, i) {
       if (!t.niveis || t.niveis.length !== 5) t.niveis = [0, 1, 2, 3, 4].map(function (k) { return (t.niveis && t.niveis[k]) || { nome: '', efeito: '' }; });
-      var tipo = el('select', {}); opts(tipo, TIPOS_TRILHA.map(function (x) { return { v: x, t: x }; }).concat([{ v: 'Quirk', t: 'Quirk (poder único)' }, { v: 'Outra', t: 'Outra' }]), 'Trilha');
+      var tipo = el('select', {}); opcoesTrilha(tipo, F());
       tipo.value = t.tipo || '';
-      tipo.addEventListener('change', function () { t.tipo = tipo.value; renderTrilhas(); mudou(); });
+      classeTrilha(tipo);
+      tipo.addEventListener('change', function () { t.tipo = tipo.value; classeTrilha(tipo); renderTrilhas(); mudou(); });
       var nome = el('input', { value: t.nome || '', placeholder: t.tipo === 'Quirk' ? 'Nome da Quirk (ex.: STILL)' : 'Apelido (opcional)', list: t.tipo === 'Quirk' ? 'dl-quirks' : null });
       nome.addEventListener('input', function () { t.nome = nome.value; mudou(); });
       nome.addEventListener('change', function () {
@@ -982,6 +1023,53 @@
   }
 
   /* ============================================================ BARRA ============================================================ */
+  /* ---------------- foto do personagem ----------------
+     A imagem é reduzida no próprio navegador antes de entrar na ficha: uma foto de celular tem
+     vários megabytes, e a ficha inteira precisa caber com folga no limite do servidor. */
+  function renderFoto() {
+    var img = $('#foto-img'), vazio = $('#foto-vazia'), x = $('#b-foto-x'), tem = !!(F() && F().foto);
+    if (tem) { img.src = F().foto; img.hidden = false; vazio.hidden = true; x.hidden = false; }
+    else { img.removeAttribute('src'); img.hidden = true; vazio.hidden = false; x.hidden = true; }
+  }
+  function encolher(file, lado, qualidade) {
+    return new Promise(function (ok, erro) {
+      var fr = new FileReader();
+      fr.onerror = function () { erro(new Error('não deu para ler o arquivo')); };
+      fr.onload = function () {
+        var im = new Image();
+        im.onerror = function () { erro(new Error('isto não parece uma imagem')); };
+        im.onload = function () {
+          var e = Math.min(1, lado / Math.max(im.width, im.height));
+          var c = document.createElement('canvas');
+          c.width = Math.max(1, Math.round(im.width * e)); c.height = Math.max(1, Math.round(im.height * e));
+          var ctx = c.getContext('2d');
+          ctx.fillStyle = '#000'; ctx.fillRect(0, 0, c.width, c.height);
+          ctx.drawImage(im, 0, 0, c.width, c.height);
+          ok(c.toDataURL('image/jpeg', qualidade));
+        };
+        im.src = fr.result;
+      };
+      fr.readAsDataURL(file);
+    });
+  }
+  $('#b-foto').addEventListener('click', function () { $('#foto-arquivo').click(); });
+  $('#b-foto-x').addEventListener('click', function () {
+    if (!confirm('Remover a foto da ficha?')) return;
+    F().foto = ''; renderFoto(); mudou();
+  });
+  $('#foto-arquivo').addEventListener('change', function () {
+    var file = this.files[0]; this.value = '';
+    if (!file) return;
+    sync('Preparando a foto…', 'warn');
+    encolher(file, 480, 0.78)
+      .then(function (d) { return d.length > 220000 ? encolher(file, 360, 0.7) : d; })   // segunda passada se ficou pesada
+      .then(function (d) {
+        if (d.length > 400000) throw new Error('a imagem ficou grande demais mesmo depois de reduzida');
+        F().foto = d; renderFoto(); mudou(); sync('Foto na ficha', '');
+      })
+      .catch(function (e) { sync('Não deu para usar a imagem: ' + e.message, 'err'); });
+  });
+
   $('#b-mesa').addEventListener('click', abrirMesa);
   $('#b-voltar-minha').addEventListener('click', function () { trocarFicha('', ''); });
   $('#b-sair').addEventListener('click', sair);
@@ -1039,6 +1127,8 @@
   });
 
   window.addEventListener('online', function () { if (S.pendente) enviar(false); });
+  /* Com o salvamento automático mais espaçado, vale enviar assim que a pessoa sai da aba. */
+  document.addEventListener('visibilitychange', function () { if (document.hidden && S.pendente) enviar(false); });
   window.addEventListener('beforeunload', function (e) {
     if (!S.sessao || !S.pendente) return;
     guardarCopia();

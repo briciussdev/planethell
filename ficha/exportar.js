@@ -72,6 +72,13 @@
       for (var k = 0; k < 6; k += 2) { rot(ws, r, k + 1, lin[k]); val(ws, r, k + 2, lin[k + 1] || '', { wrap: true }); }
       r++;
     });
+    /* o retrato, quando existe, entra flutuando à direita do cabeçalho */
+    if (f.foto && /^data:image\/(jpeg|jpg|png);base64,/.test(f.foto)) {
+      try {
+        var idImg = wb.addImage({ base64: f.foto, extension: /png/.test(f.foto.slice(0, 20)) ? 'png' : 'jpeg' });
+        ws.addImage(idImg, { tl: { col: 5.05, row: 0.15 }, ext: { width: 96, height: 128 } });
+      } catch (e) { /* uma planilha sem foto é melhor do que nenhuma planilha */ }
+    }
     r++;
     r = titulo(ws, r, 'Atributos', 6);
     var cel = {};                                           // endereço de cada atributo, para as fórmulas
@@ -166,7 +173,10 @@
 
     /* ---- aba 4: Equipamento ---- */
     var we = novaAba(wb, 'Equipamento', [28, 10, 14, 12, 50]);
-    r = titulo(we, 1, 'Armas', 5);
+    r = titulo(we, 1, 'Recursos', 5);
+    rot(we, r, 1, 'Créditos'); val(we, r, 2, num(f.creditos), { h: 'center' });
+    rot(we, r, 3, 'Bens e favores'); we.mergeCells(r, 4, r, 5); val(we, r, 4, f.bens || '', { leitura: true, wrap: true }); r += 2;
+    r = titulo(we, r, 'Armas', 5);
     ['Arma', 'Dano', 'Tipo', 'Perfuração', 'Notas'].forEach(function (h, k) { rot(we, r, k + 1, h); }); r++;
     f.armas.forEach(function (a) { val(we, r, 1, a.nome || ''); val(we, r, 2, '+' + num(a.dano), { h: 'center' }); val(we, r, 3, a.tipo === 'sup' ? 'superficial' : 'agravado'); val(we, r, 4, num(a.perf), { h: 'center' }); val(we, r, 5, a.nota || '', { leitura: true, wrap: true }); r++; });
     r = titulo(we, r + 1, 'Blindagem', 5);

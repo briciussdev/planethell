@@ -32,7 +32,8 @@
       saude: [], fv: [],
       moral: 7, manchas: 0, despertar: 0, consequencias: [],
       convic: [], ambicao: '', desejo: '',
-      armas: [], blindagens: [], itens: [],
+      armas: [], blindagens: [], itens: [], creditos: 0, bens: '',
+      foto: '',
       xp: { total: 0, log: [] },
       mods: { saude: 0, fv: 0, ini: 0, desl: 0 },
       historia: '', notas: ''

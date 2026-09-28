@@ -194,7 +194,9 @@ if (MODO === 'servidor') {
   ok(await q.inputValue('#i-personagem') === 'Nadia Corvo', 'outro aparelho abre a mesma ficha');
   await q.fill('#i-notas', 'escrito no celular'); await q.click('#b-salvar'); await q.waitForFunction(() => /Salvo/.test(document.querySelector('#sync').textContent));
   await p.fill('#i-historia', 'escrito no computador velho');
-  await p.waitForSelector('#modal:not([hidden])', { timeout: 10000 });
+  ok(await p.evaluate(() => document.querySelector('#sync').classList.contains('pend')), 'enquanto há coisa por enviar, a barra mostra só o ponto âmbar');
+  /* o salvamento automático agora é espaçado (15s), então o conflito aparece no próximo envio */
+  await p.waitForSelector('#modal:not([hidden])', { timeout: 30000 });
   ok(/Versão mais nova/.test(await p.textContent('#modal')), 'o computador desatualizado recebe aviso de conflito, sem sobrescrever');
   await p.click('#modal .btn >> text=Abrir a mais nova');
   ok(await p.inputValue('#i-notas') === 'escrito no celular', 'abre a versão mais nova');

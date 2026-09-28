@@ -67,6 +67,7 @@
     <span class="sp"></span>
     <div class="acts">
       <button class="btn ghost small narr" type="button" id="b-mesa" hidden title="Ver e abrir as fichas da mesa">Mesa</button>
+      <a class="btn ghost small narr" id="b-painel" hidden href="painel.html" title="Painel com XP, créditos e dano de toda a mesa">Painel</a>
       <button class="btn ghost small" type="button" id="b-salvar" title="Salvar agora e guardar uma cópia no histórico">Salvar</button>
       <button class="btn ghost small" type="button" id="b-xlsx">Excel / Sheets</button>
       <button class="btn ghost small" type="button" id="b-pdf">PDF</button>
@@ -90,6 +91,18 @@
   <!-- 1. identidade -->
   <section class="hud" id="s-id">
     <h2><span class="num">01</span>Identidade</h2>
+    <div class="id-linha">
+    <div class="retrato">
+      <div class="moldura" id="foto-box">
+        <img id="foto-img" alt="Retrato do personagem" hidden>
+        <span class="vazio" id="foto-vazia">sem foto</span>
+      </div>
+      <div class="foto-acts noprint">
+        <button class="btn ghost small" type="button" id="b-foto">Escolher foto</button>
+        <button class="btn ghost small" type="button" id="b-foto-x" hidden>Remover</button>
+      </div>
+      <input type="file" id="foto-arquivo" accept="image/*" hidden>
+    </div>
     <div class="fields">
       <div class="f"><label for="i-personagem">Nome do personagem</label><input id="i-personagem" data-b="id.personagem"></div>
       <div class="f"><label for="i-jogador">Jogador</label><input id="i-jogador" data-b="id.jogador" readonly></div>
@@ -99,6 +112,7 @@
       <div class="f"><label for="i-nacao">Nação de origem</label><select id="i-nacao" data-b="id.nacao"></select></div>
       <div class="f"><label for="i-patamar">Patamar inicial</label><select id="i-patamar" data-b="id.patamar"></select></div>
       <div class="f"><label for="i-aparencia">Aparência</label><input id="i-aparencia" data-b="id.aparencia"></div>
+    </div>
     </div>
   </section>
 
@@ -207,6 +221,10 @@
   <!-- 10. equipamento -->
   <section class="hud" id="s-eq">
     <h2><span class="num">12</span>Equipamento</h2>
+    <div class="fields">
+      <div class="f"><label for="i-creditos">Créditos</label><input id="i-creditos" data-b="creditos" inputmode="numeric" placeholder="0"></div>
+      <div class="f"><label for="i-bens">Bens e favores</label><input id="i-bens" data-b="bens" placeholder="veículo, contatos que devem favor, apartamento…"></div>
+    </div>
     <h3>Armas</h3><div class="list" id="armas"></div><button class="btn ghost small" type="button" data-add="armas">+ Arma</button>
     <h3>Blindagem</h3><div class="list" id="blindagens"></div><button class="btn ghost small" type="button" data-add="blindagens">+ Blindagem</button>
     <h3>Outros itens</h3><div class="list" id="itens"></div><button class="btn ghost small" type="button" data-add="itens">+ Item</button>
@@ -293,6 +311,8 @@
 
 <script src="config.js"></script>
 <script src="dados.js"></script>
+<script src="glossario.js"></script>
+<script src="ajuda.js"></script>
 <script src="rolagens.js"></script>
 <script src="regras.js"></script>
 <script src="armazem.js"></script>

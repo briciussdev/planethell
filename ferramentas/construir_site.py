@@ -130,6 +130,28 @@ guide=wrap(guide,'g-anexo-b-defeitos','g-anexo-c-as-dezessete-trilhas','anx-def'
 cta='<p class="cta-row" style="margin:6px 0 18px"><a class="btn" href="'+FICHA+'">Abrir a ficha</a></p>\n'
 guide=after_heading(guide,'g-11-a-ficha-digital',cta)
 s=tpl.replace('{{TOC}}',tochtml).replace('{{GUIDE}}',guide).replace('{{FICHA}}',FICHA)
+
+# Balões de ajuda: o glossário e o componente moram na ficha, e são embutidos aqui para a landing
+# funcionar sozinha. Depois da montagem, um script liga os nomes de Atributos e Perícias nas tabelas.
+gloss=open(os.path.join(AQUI,'..','ficha','glossario.js')).read()
+ajuda=open(os.path.join(AQUI,'..','ficha','ajuda.js')).read()
+ligar="""
+(function(){
+  if(!window.PHAjuda) return;
+  var prosa=document.getElementById('prose'); if(!prosa) return;
+  /* as tabelas de Atributos e de Perícias da seção 10, e qualquer célula que seja exatamente um termo */
+  PHAjuda.marcar(prosa,'td,th');
+  /* nomes soltos em negrito no texto corrido, uma vez cada */
+  var vistos={};
+  Array.prototype.forEach.call(prosa.querySelectorAll('p strong'),function(e){
+    if(e.querySelector('*')) return;
+    var k=e.textContent.trim(); if(vistos[k]) return;
+    if(PHAjuda.ligar(e)) vistos[k]=1;
+  });
+})();
+"""
+s=s+'\n<script>'+gloss+'</script>\n<script>'+ajuda+'</script>\n<script>'+ligar+'</script>\n'
+assert 'PH_GLOSS' in s and 'PHAjuda' in s
 assert '{{' not in s and 'claude.ai/code/artifact' not in s and 'pós-playtest' not in s
 assert 'id="g-10-criando-o-seu-personagem"' in s and '{{' not in s
 if not os.environ.get('ARTEFATO'):
